@@ -123,12 +123,16 @@ class Fees_model extends MY_Model
     }
 
     public function typeSave($data)
-    {
+    {   
         $arrayData = array(
             'branch_id' => $this->application_model->get_branch_id(),
             'name' => $data['type_name'],
             'fee_code' => strtolower(str_replace(' ', '-', $data['type_name'])),
             'description' => $data['description'],
+            # Added by JR
+            'frequency' =>  serialize($data['frequency']),
+            'frequency_type' =>$data['frequency_type']
+            # END
         );
         if (!isset($data['type_id'])) {
             $this->db->insert('fees_type', $arrayData);

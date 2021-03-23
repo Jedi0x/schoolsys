@@ -1989,3 +1989,17 @@ window.theme = {};
 	}
 
 }).apply(this, [window.theme, jQuery]);
+
+
+// Added by JR
+
+$(document).on('click','[name="frequency_type"]',function (e) {
+	var type = $(this).val();
+	if(type == 3){
+		$('.month-options').removeClass('mfp-hide');
+	}else{
+		$('.month-options').addClass('mfp-hide');
+	}
+});
+
+// END

@@ -456,3 +456,19 @@ function delete_dir($dirPath)
     }
     return false;
 }
+
+
+/**
+ * This function is used to print arrays and strings
+ * @param  string $arr array name
+ * @param  boolean $exit true|false
+ */
+
+function debug($arr, $exit = false)
+{
+  print "<pre>";
+  print_r($arr);
+  print "</pre>";
+  if($exit)
+    exit;
+}
