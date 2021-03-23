@@ -1025,6 +1025,7 @@
                     </li>
                     <?php } ?>
                     <?php
+                    /*
                     if(get_permission('fees_type', 'is_view') ||
                     get_permission('fees_group', 'is_view') ||
                     get_permission('fees_fine_setup', 'is_view') ||
@@ -1070,11 +1071,11 @@
                             <?php } ?>
                         </ul>
                     </li>
-                    <?php } ?>
+                    <?php } */?>
 
 
                     <?php
-
+                    
                     // Added by JR
                     if(get_permission('fees_type', 'is_view') ||
                     get_permission('fees_group', 'is_view') ||
@@ -1087,36 +1088,36 @@
                     <!-- student accounting -->
                     <li class="nav-parent <?php if ($main_menu == 'fees') echo 'nav-expanded nav-active';?>">
                         <a>
-                            <i class="icons icon-calculator"></i><span><?=translate('new_student_accounting')?></span>
+                            <i class="icons icon-calculator"></i><span><?=translate('student_accounting')?></span>
                         </a>
                         <ul class="nav nav-children">
                             <?php if(get_permission('fees_type', 'is_view')) { ?>
-                            <li class="<?php if ($sub_page == 'fees/type') echo 'nav-active';?>">
-                                <a href="<?=base_url('fees/type')?>"><span><i class="fas fa-caret-right"></i><?=translate('fees_type')?></span></a>
+                            <li class="<?php if ($sub_page == 'fees_new/type') echo 'nav-active';?>">
+                                <a href="<?=base_url('fees_new/type')?>"><span><i class="fas fa-caret-right"></i><?=translate('fees_type')?></span></a>
                             </li>
                             <?php } if(get_permission('fees_group', 'is_view')) { ?>
-                            <li class="<?php if ($sub_page == 'fees/group') echo 'nav-active';?>">
-                                <a href="<?=base_url('fees/group')?>"><span><i class="fas fa-caret-right"></i><?=translate('fees_group')?></span></a>
+                            <li class="<?php if ($sub_page == 'fees_new/group') echo 'nav-active';?>">
+                                <a href="<?=base_url('fees_new/group')?>"><span><i class="fas fa-caret-right"></i><?=translate('fees_group')?></span></a>
                             </li>
                             <?php } if(get_permission('fees_fine_setup', 'is_view')) { ?>
-                            <li class="<?php if ($sub_page == 'fees/fine_setup') echo 'nav-active';?>">
-                                <a href="<?=base_url('fees/fine_setup')?>"><span><i class="fas fa-caret-right"></i><?=translate('fine_setup')?></span></a>
+                            <li class="<?php if ($sub_page == 'fees_new/fine_setup') echo 'nav-active';?>">
+                                <a href="<?=base_url('fees_new/fine_setup')?>"><span><i class="fas fa-caret-right"></i><?=translate('fine_setup')?></span></a>
                             </li>
                             <?php } if(get_permission('fees_allocation', 'is_view')) { ?>
-                            <li class="<?php if ($sub_page == 'fees/allocation') echo 'nav-active';?>">
-                                <a href="<?=base_url('fees/allocation')?>"><span><i class="fas fa-caret-right"></i><?=translate('fees_allocation')?></span></a>
+                            <li class="<?php if ($sub_page == 'fees_new/allocation') echo 'nav-active';?>">
+                                <a href="<?=base_url('fees_new/allocation')?>"><span><i class="fas fa-caret-right"></i><?=translate('fees_allocation')?></span></a>
                             </li>
                             <?php } if(get_permission('invoice', 'is_view')) { ?>
-                            <li class="<?php if ($sub_page == 'fees/invoice_list' || $sub_page == 'fees/collect') echo 'nav-active';?>">
-                                <a href="<?=base_url('fees/invoice_list')?>"><span><i class="fas fa-caret-right"></i><?=translate('payments_history')?></span></a>
+                            <li class="<?php if ($sub_page == 'fees_new/invoice_list' || $sub_page == 'fees_new/collect') echo 'nav-active';?>">
+                                <a href="<?=base_url('fees_new/invoice_list')?>"><span><i class="fas fa-caret-right"></i><?=translate('payments_history')?></span></a>
                             </li>
                             <?php } if(get_permission('due_invoice', 'is_view')) { ?>
-                            <li class="<?php if ($sub_page == 'fees/due_invoice') echo 'nav-active';?>">
-                                <a href="<?=base_url('fees/due_invoice')?>"><span><i class="fas fa-caret-right"></i><?=translate('due_fees_invoice')?></span></a>
+                            <li class="<?php if ($sub_page == 'fees_new/due_invoice') echo 'nav-active';?>">
+                                <a href="<?=base_url('fees_new/due_invoice')?>"><span><i class="fas fa-caret-right"></i><?=translate('due_fees_invoice')?></span></a>
                             </li>
                             <?php } if(get_permission('fees_reminder', 'is_view')) { ?>
-                            <li class="<?php if ($sub_page == 'fees/reminder') echo 'nav-active';?>">
-                                <a href="<?=base_url('fees/reminder')?>"><span><i class="fas fa-caret-right"></i><?=translate('fees_reminder')?></span></a>
+                            <li class="<?php if ($sub_page == 'fees_new/reminder') echo 'nav-active';?>">
+                                <a href="<?=base_url('fees_new/reminder')?>"><span><i class="fas fa-caret-right"></i><?=translate('fees_reminder')?></span></a>
                             </li>
                             <?php } ?>
                         </ul>
