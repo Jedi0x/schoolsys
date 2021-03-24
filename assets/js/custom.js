@@ -2002,4 +2002,10 @@ $(document).on('click','[name="frequency_type"]',function (e) {
 	}
 });
 
+
+function create_voucher(student_id) {
+	$('#create_single_voucher_hidden_feilds').html(`<input type='hidden' name='student_id' value='`+student_id+`' /> <input type='hidden' name='voucher' value='1' />`);
+	mfp_modal('#createVoucherModal');
+}
+
 // END
