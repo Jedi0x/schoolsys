@@ -1,7 +1,64 @@
-<?php $widget = (is_superadmin_loggedin() ? 3 : 4);?>
+<?php $widget = (is_superadmin_loggedin() ? 4 : 4);?>
 <div class="row">
 	<div class="col-md-12">
 		<section class="panel">
+		<!-- Code by UM -->
+<!-- 		<ul class="nav nav-tabs">
+			<li class="active">
+				<a href="list"></i> <?php echo translate('fees_group') . " " . translate('list'); ?></a>
+			</li>
+			<li>
+				<a href="#create" data-toggle="tab"><i class="far fa-edit"></i> <?php echo translate('edit') . " " . translate('fees_group'); ?></a>
+			</li>
+		</ul> -->
+		<div class="tabs-custom">
+			<ul class="nav nav-tabs">
+				<li class="">
+					<a href="#list" data-toggle="tab"><i class="fas fa-list-ul"></i> <?php echo translate('fee_allocation_list'); ?></a>
+				</li>
+					<li class="active">
+						<a href="#create" data-toggle="tab"><i class="far fa-edit"></i> <?php echo translate('fee_allocation'); ?></a>
+					</li>
+			</ul>
+
+		<!-- code end by UM -->
+		<div class="tab-content">
+
+				<div id="list" class="tab-pane">
+				<div class="mb-md">
+					<div class="export_title">Fees Type List</div>
+					<table class="table table-bordered table-hover table-condensed table-export">
+						<thead>
+							<tr>
+								<th width="50"><?php echo translate('sl'); ?></th>
+								<th><?=translate('name')?></th>
+								<th><?=translate('class')?></th> 
+								<th><?=translate('section')?></th>
+								<th><?=translate('branch')?></th>
+								<!-- <th><?=translate('group_name')?></th> -->
+								<!-- <th><?=translate('description')?></th> -->
+							</tr>
+						</thead>
+						<tbody>
+							<?php $count = 1; foreach ($getfeeallocation as $row): ?>
+							<tr>
+								<td><?php echo $count++; ?></td>
+								<td><?php echo $row['student_name'];?></td>
+								<td><?php echo $row['class_name'];  ?></td>
+								<td><?php echo $row['section_name']; ?></td>
+								<td><?php echo $row['branch_name']; ?></td>
+								<!-- <td><?php echo $row['group_name'];?></td> -->
+								<!-- <td><?php echo $row['group_description']; ?></td> -->
+							</tr>
+							<?php endforeach; ?>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+
+
+			<div class="tab-pane active" id="create">
 			<header class="panel-heading">
 				<h4 class="panel-title"><?=translate('select_ground')?></h4>
 			</header>
@@ -9,7 +66,7 @@
 			<div class="panel-body">
 				<div class="row mb-sm">
 				<?php if (is_superadmin_loggedin() ): ?>
-					<div class="col-md-3">
+					<div class="col-md-4">
 						<div class="form-group">
 							<label class="control-label"><?=translate('branch')?> <span class="required">*</span></label>
 							<?php
@@ -40,7 +97,7 @@
 							?>
 						</div>
 					</div>
-					<div class="col-md-<?php echo $widget; ?> mb-sm">
+<!-- 					<div class="col-md-<?php echo $widget; ?> mb-sm">
 						<div class="form-group">
 							<label class="control-label"><?=translate('fee_group')?> <span class="required">*</span></label>
 							<?php
@@ -49,7 +106,7 @@
 								data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity' ");
 							?>
 						</div>
-					</div>
+					</div> -->
 				</div>
 			</div>
 			<footer class="panel-footer">
@@ -60,13 +117,18 @@
 				</div>
 			</footer>
 			<?php echo form_close();?>
+		</div>
+	</div>
 		</section>
 
 		<?php if (isset($studentlist)):?>
 		<section class="panel appear-animation" data-appear-animation="<?=$global_config['animations'] ?>" data-appear-animation-delay="100">
 			<?php echo form_open($this->uri->uri_string());?>
-			<input type="hidden" name="fee_group_id" value="<?=$fee_group_id; ?>" >
+			<!-- <input type="hidden" name="fee_group_id" value="<?=$fee_group_id; ?>" > -->
 			<input type="hidden" name="branch_id" value="<?=$branch_id; ?>" >
+
+			<input type="hidden" name="class_id" value="<?=set_value('class_id'); ?>" >
+			<input type="hidden" name="section_id" value="<?=set_value('section_id'); ?>" >
 			<header class="panel-heading">
 				<h4 class="panel-title"><i class="fas fa-list"></i> <?php echo translate('student_list');?></h4>
 			</header>
@@ -125,6 +187,8 @@
 			</footer>
 			<?php echo form_close();?>
 		</section>
+		</div>
+
 		<?php endif;?>
 	</div>
 </div>

@@ -15,3 +15,4 @@ class Barcode
 		return $generator->getBarcode($barcode, $generator::TYPE_CODE_128);
 	}
 }
+?>
