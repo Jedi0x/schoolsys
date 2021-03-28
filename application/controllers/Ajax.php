@@ -94,6 +94,8 @@ class Ajax extends MY_Controller
 
     public function getDataByBranch()
     {
+
+
         $html = "";
         $table = $this->input->post('table');
         $branch_id = $this->application_model->get_branch_id();
@@ -118,9 +120,19 @@ class Ajax extends MY_Controller
         $html = "";
         $branch_id = $this->application_model->get_branch_id();
         if (!empty($branch_id)) {
-            $classes = $this->db->select('id,name')->where('branch_id', $branch_id)->get('class')->result_array();
+            # ADDED by JR
+
+            if($branch_id == 'all'){
+                $classes = $this->db->select('id,name')->get('class')->result_array();
+            }else{
+                $classes = $this->db->select('id,name')->where('branch_id', $branch_id)->get('class')->result_array();
+            }
+
+            # END
+           
             if (count($classes)) {
                 $html .= "<option value=''>" . translate('select') . "</option>";
+                $html .= "<option value='all'>" . translate('all_select') . "</option>";
                 foreach ($classes as $row) {
                     $html .= '<option value="' . $row['id'] . '">' . $row['name'] . '</option>';
                 }
@@ -182,7 +194,20 @@ class Ajax extends MY_Controller
                     ->join('section', 'section.id = teacher_allocation.section_id', 'left')
                     ->where(array('teacher_allocation.class_id' => $classID, 'teacher_allocation.teacher_id' => get_loggedin_user_id(), 'teacher_allocation.session_id' => get_session_id()))
                     ->get()->result_array();
-            } else {
+            }
+            # Added by JR
+
+            else if($classID == 'all'){
+                $result = $this->db->select('sections_allocation.section_id,section.name')
+                    ->from('sections_allocation')
+                    ->join('section', 'section.id = sections_allocation.section_id', 'left')
+                    ->get()->result_array();
+            }
+
+            # END 
+
+
+            else {
                 $result = $this->db->select('sections_allocation.section_id,section.name')
                     ->from('sections_allocation')
                     ->join('section', 'section.id = sections_allocation.section_id', 'left')

@@ -123,12 +123,16 @@ class Fees_model extends MY_Model
     }
 
     public function typeSave($data)
-    {
+    {   
         $arrayData = array(
             'branch_id' => $this->application_model->get_branch_id(),
             'name' => $data['type_name'],
             'fee_code' => strtolower(str_replace(' ', '-', $data['type_name'])),
             'description' => $data['description'],
+            # Added by JR
+            'frequency' =>  serialize($data['frequency']),
+            'frequency_type' =>$data['frequency_type']
+            # END
         );
         if (!isset($data['type_id'])) {
             $this->db->insert('fees_type', $arrayData);
@@ -288,6 +292,96 @@ class Fees_model extends MY_Model
         $result = $this->db->get()->result_array();
         return $result;
     }
+
+    # Added by JR
+
+    public function getStuHistory($student_name='', $father_name='', $registration_no='', $roll_no='', $father_mobile_no='', $father_nic_no='')
+    {
+        $this->db->select('CONCAT(student.first_name, \' \', student.last_name) as full_name, student.id as student_id, parent.id as parent_id, register_no, enroll.roll as roll_no, student.mobileno, student.email as email, section.name as section_name, class.name as class_name, student.gender, branch.name as branch_name');
+
+        $this->db->from('student');
+        $this->db->join('parent', 'parent.id = student.parent_id');
+        $this->db->join('enroll', 'enroll.student_id = student.id');
+        $this->db->join('section', 'section.id = enroll.section_id');
+        $this->db->join('class', 'class.id = enroll.class_id');
+        $this->db->join('branch', 'branch.id = parent.branch_id');
+        
+        if (!empty($student_name)){
+            $this->db->where('CONCAT(student.first_name, \' \', student.last_name) = ', $student_name);
+        }
+
+        if (!empty($father_name)){
+            $this->db->where('parent.father_name', $father_name);
+        }
+
+
+        if (!empty($registration_no)){
+            $this->db->where('student.register_no', $registration_no);
+        }
+
+        if (!empty($roll_no)){
+            $this->db->where('enroll.roll', $roll_no);
+        }
+
+        if (!empty($father_mobile_no)){
+            $this->db->where('parent.mobileno', $father_mobile_no);
+        }
+
+        // if (!empty($father_nic_no)){
+        //     $this->db->where('register_no', $father_nic_no);
+        // }
+
+        $this->db->order_by('student.id', 'asc');
+        $result = $this->db->get()->result_array();
+        return $result;
+    }
+
+
+        public function getStudentHistory($branch='', $class='', $section='')
+    {
+        $this->db->select('CONCAT(student.first_name, \' \', student.last_name) as full_name, student.id as student_id, parent.id as parent_id, register_no, enroll.roll as roll_no, student.mobileno, student.email as email, section.name as section_name, class.name as class_name, student.gender, branch.name as branch_name');
+
+        $this->db->from('student');
+        $this->db->join('parent', 'parent.id = student.parent_id');
+        $this->db->join('enroll', 'enroll.student_id = student.id');
+        $this->db->join('section', 'section.id = enroll.section_id');
+        $this->db->join('class', 'class.id = enroll.class_id');
+        $this->db->join('branch', 'branch.id = parent.branch_id');
+        
+        if (!empty($branch)){
+            if($branch == 'all'){
+
+            }else{
+                $this->db->where('branch.id', $branch);
+            }
+            
+        }
+
+        if (!empty($class)){
+            if($class == 'all'){
+
+            }else{
+                $this->db->where('class.id', $class);
+            }
+            
+        }
+
+
+        if (!empty($section)){
+            if($section == 'all'){
+
+            }else{
+                $this->db->where('section.id', $section);
+            }
+            
+        }
+
+        $this->db->order_by('student.id', 'asc');
+        $result = $this->db->get()->result_array();
+        return $result;
+    }
+
+    # END
 
     public function getStuPaymentReport($classID='', $sectionID, $studentID, $typeID, $start, $end, $branchID)
     {
