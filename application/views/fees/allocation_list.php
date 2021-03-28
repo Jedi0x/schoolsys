@@ -1,16 +1,16 @@
 <?php $currency_symbol = $global_config['currency_symbol'];?>
 <section class="panel">
 	<div class="tabs-custom">
+		<!-- Code by UM -->
 		<ul class="nav nav-tabs">
-			<li class="<?=empty($branch_id) ? 'active' : ''?>">
-				<a href="#list" data-toggle="tab"><i class="fas fa-list-ul"></i> <?php echo translate('fees_group') . " " . translate('list'); ?></a>
+			<li class="active">
+				<a href="<?=base_url('fees/allocation')?>"><i class="fas fa-list-ul"></i> <?php echo translate('fees_group') . " " . translate('list'); ?></a>
 			</li>
-<?php if (get_permission('fees_group', 'is_add')){ ?>
-			<li class="<?=!empty($branch_id) ? 'active' : ''?>">
-				<a href="#create" data-toggle="tab"><i class="far fa-edit"></i> <?php echo translate('add') . " " . translate('fees_group'); ?></a>
+			<li>
+				<a href="#create" data-toggle="tab"><i class="far fa-edit"></i> <?php echo translate('edit') . " " . translate('fees_group'); ?></a>
 			</li>
-<?php } ?>
 		</ul>
+		<!-- code end by UM -->
 		<div class="tab-content">
 			<div id="list" class="tab-pane <?=empty($branch_id) ? 'active' : ''?>">
 				<div class="mb-md">
@@ -103,6 +103,7 @@
 									</div>
 								</th>
 								<th><?=translate('fees_type')?></th>
+								<th><?=translate('due_date')?> <span class="required">*</span></th>
 								<th><?=translate('amount')?> <span class="required">*</span></th>
 							</thead>
 							<tbody>
@@ -124,6 +125,13 @@
 										</div>
 									</td>
 									<td class="min-w-lg"><?=$value['name']?></td>
+									<td class="min-w-sm">
+										<div class="form-group">
+											<input type="text" class="form-control" name="elem[<?=$key?>][due_date]" value="" data-plugin-datepicker
+											data-plugin-options='{"startView": 1}' autocomplete="off" />
+											<span class="error"></span>
+										</div>
+									</td>
 									<td class="min-w-lg">
 										<div class="form-group">
 											<input type="text" class="form-control" name="elem[<?=$key?>][amount]" placeholder="0.00" autocomplete="off" />

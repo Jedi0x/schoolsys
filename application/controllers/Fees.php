@@ -134,7 +134,6 @@ class Fees extends Admin_Controller
                 foreach ($elems as $key => $value) {
                     if (isset($value['fees_type_id'])) {
                         $sel++;
-                        $this->form_validation->set_rules('elem[' . $key . '][due_date]', translate('due_date'), 'trim|required');
                         $this->form_validation->set_rules('elem[' . $key . '][amount]', translate('amount'), 'trim|required|greater_than[0]');
                     }
                 }
@@ -154,7 +153,6 @@ class Fees extends Admin_Controller
                             $arrayData = array(
                                 'fee_groups_id' => $groupID,
                                 'fee_type_id' => $row['fees_type_id'],
-                                'due_date' => date("Y-m-d", strtotime($row['due_date'])),
                                 'amount' => $row['amount'],
                             );
                             $this->db->where(array('fee_groups_id' => $groupID, 'fee_type_id' => $row['fees_type_id']));
@@ -198,7 +196,6 @@ class Fees extends Admin_Controller
                 foreach ($elems as $key => $value) {
                     if (isset($value['fees_type_id'])) {
                         $sel[] = $value['fees_type_id'];
-                        $this->form_validation->set_rules('elem[' . $key . '][due_date]', translate('due_date'), 'trim|required');
                         $this->form_validation->set_rules('elem[' . $key . '][amount]', translate('amount'), 'trim|required|greater_than[0]');
                     }
                 }
@@ -217,7 +214,6 @@ class Fees extends Admin_Controller
                             $arrayData = array(
                                 'fee_groups_id' => $groupID,
                                 'fee_type_id' => $row['fees_type_id'],
-                                'due_date' => date("Y-m-d", strtotime($row['due_date'])),
                                 'amount' => $row['amount'],
                             );
                             $this->db->where(array('fee_groups_id' => $groupID, 'fee_type_id' => $row['fees_type_id']));
@@ -396,19 +392,24 @@ class Fees extends Admin_Controller
         if (isset($_POST['search'])) {
             $this->data['class_id'] = $this->input->post('class_id');
             $this->data['section_id'] = $this->input->post('section_id');
-            $this->data['fee_group_id'] = $this->input->post('fee_group_id');
+            // $this->data['fee_group_id'] = $this->input->post('fee_group_id');
             $this->data['branch_id'] = $branchID;
-            $this->data['studentlist'] = $this->fees_model->getStudentAllocationList($this->data['class_id'], $this->data['section_id'], $this->data['fee_group_id'], $branchID);
+            $this->data['studentlist'] = $this->fees_model->getStudentAllocationList($this->data['class_id'], $this->data['section_id'],'', $branchID);
         }
         if (isset($_POST['save'])) {
+
+     
+
             $student_array = $this->input->post('stu_operations');
             $fee_groupID = $this->input->post('fee_group_id');
             foreach ($student_array as $key => $value) {
                 $arrayData = array(
                     'student_id' => $value,
-                    'group_id' => $fee_groupID,
+                    // 'group_id' => $fee_groupID,
                     'session_id' => get_session_id(),
                     'branch_id' => $branchID,
+                    'class_id' => $this->input->post('class_id'),
+                    'section_id' => $this->input->post('section_id'),
                 );
                 $this->db->where($arrayData);
                 $q = $this->db->get('fee_allocation');
@@ -419,14 +420,26 @@ class Fees extends Admin_Controller
             if (!empty($student_array)) {
                 $this->db->where_not_in('student_id', $student_array);
             }
-            $this->db->where('group_id', $fee_groupID);
+            // $this->db->where('group_id', $fee_groupID);
             $this->db->where('session_id', get_session_id());
             $this->db->delete('fee_allocation');
+            // echo $this->db->last_query();
+            // exit();
             set_alert('success', translate('information_has_been_saved_successfully'));
             redirect(base_url('fees/allocation'));
         }
+
+        $this->data['getfeeallocation'] = $this->fees_model->getfeeallocation();
+        
+        // echo "<pre>";
+        // print_r($this->fees_model->getfeeallocation());
+        // exit();
         $this->data['branch_id'] = $branchID;
         $this->data['title'] = translate('fees_allocation');
+        $this->data['categorylist'] = $this->app_lib->getTable('fee_allocation', array('t.session_id' => get_session_id()));
+        // echo "<pre>";
+        // print_r($this->app_lib->getTable('fee_allocation', array('t.session_id' => get_session_id())));
+        // exit();
         $this->data['sub_page'] = 'fees/allocation';
         $this->data['main_menu'] = 'fees';
         $this->load->view('layout/index', $this->data);
