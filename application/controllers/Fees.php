@@ -911,6 +911,21 @@ class Fees extends Admin_Controller
         $this->load->view('layout/index', $this->data);
     }
 
+    public function generate_barcode()
+    {
+        $this->load->library('barcode');
+        file_put_contents(FCPATH.'assets/images/voucher_barcodes/123456789.png',$this->barcode->generate('123456789'));
+       
+    }
+
+    public function generate_pdf()
+    {
+        $this->load->library('XYZ');
+        $this->XYZ->voucher();
+
+
+    }
+
 
     # END
 
