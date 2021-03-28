@@ -446,6 +446,7 @@ $.extend(theme.PluginDatePicker.defaults, {
         });
     }
 
+
 	// customize ckeditor
 	if ($("#ckeditor").length) {
 		CKEDITOR.replace('ckeditor');

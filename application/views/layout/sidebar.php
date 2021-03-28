@@ -1107,6 +1107,12 @@
                             <li class="<?php if ($sub_page == 'fees/allocation') echo 'nav-active';?>">
                                 <a href="<?=base_url('fees/allocation')?>"><span><i class="fas fa-caret-right"></i><?=translate('fees_allocation')?></span></a>
                             </li>
+
+                            <?php } if(get_permission('invoice', 'is_view')) { ?>
+                            <li class="<?php if ($sub_page == 'fees/create_voucher') echo 'nav-active';?>">
+                                <a href="<?=base_url('fees/create_voucher')?>"><span><i class="fas fa-caret-right"></i><?=translate('create_voucher')?></span></a>
+                            </li>
+
                             <?php } if(get_permission('invoice', 'is_view')) { ?>
                             <li class="<?php if ($sub_page == 'fees/invoice_list' || $sub_page == 'fees/collect') echo 'nav-active';?>">
                                 <a href="<?=base_url('fees/invoice_list')?>"><span><i class="fas fa-caret-right"></i><?=translate('payments_history')?></span></a>
