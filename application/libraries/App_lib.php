@@ -140,7 +140,7 @@ class App_lib
                 $this->CI->db->where('branch_id', $branch_id);
                 $result = $this->CI->db->get('class')->result();
             }
-            $array = array('' => translate('select'));
+            $array = array('' => translate('select'),'all' => translate('all_select'));
             foreach ($result as $row) {
                 $array[$row->id] = $row->name;
             }

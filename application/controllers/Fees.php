@@ -884,9 +884,27 @@ class Fees extends Admin_Controller
             $father_mobile_no = $this->input->post('father_mobile_no');
             $father_nic_no = $this->input->post('father_nic_no');
             $this->data['studentlist'] = $this->fees_model->getStuHistory($student_name, $father_name ,$registration_no, $roll_no, $father_mobile_no, $father_nic_no);
+            $this->data['active_tab'] = $this->input->post('active_tab');
 
         }
-        
+
+
+        if ($this->input->post('search_bulk')) {
+            $branch = $this->input->post('branch_id');
+            $class  = $this->input->post('class_id');
+            $section  = $this->input->post('section_id');
+            $this->data['bulkstudentlist'] = $this->fees_model->getStudentHistory($branch, $class ,$section);
+            $this->data['active_tab'] = $this->input->post('active_tab');
+        }
+
+
+        if($this->input->post('voucher')){
+            debug($this->input->post(),true);
+        }
+
+
+   
+        $this->data['branch_id'] = $branchID;
         $this->data['title'] = translate('create_voucher');
         $this->data['sub_page'] = 'fees/create_voucher';
         $this->data['main_menu'] = 'fees';

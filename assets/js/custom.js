@@ -2003,6 +2003,36 @@ $(document).on('click','[name="frequency_type"]',function (e) {
 });
 
 
+$(document).on('click','.create_vouchers',function (e) {
+	var student_id = '';
+	var student_ids = [];
+	$('input[name="stu_voucehr[]"]:checked').each(function() {
+		student_ids.push(this.value);
+		student_id += `<input type='hidden' name='student_id[]' value='`+this.value+`' />`;
+	
+	});
+
+	if(student_ids == ''){
+		swal({
+			toast: true,
+			position: 'top-end',
+			type: 'error',
+			title: 'Please Select Student First',
+			confirmButtonClass: 'btn btn-default',
+			buttonsStyling: false,
+			timer: 8000
+		});
+		return false;
+	}
+
+	$('#create_single_voucher_hidden_feilds').html(` `+student_id+` <input type='hidden' name='voucher' value='1' />`);
+	mfp_modal('#createVoucherModal');
+});
+
+
+
+
+
 function create_voucher(student_id) {
 	$('#create_single_voucher_hidden_feilds').html(`<input type='hidden' name='student_id' value='`+student_id+`' /> <input type='hidden' name='voucher' value='1' />`);
 	mfp_modal('#createVoucherModal');
