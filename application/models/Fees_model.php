@@ -177,7 +177,32 @@ class Fees_model extends MY_Model
             return false;
         }
     }
+    public function getfeeallocation()
+    {
+        $this->db->select('student.first_name as student_name,class.name as class_name,section.name as section_name,branch.name as branch_name');
+        $this->db->from('fee_allocation');
+        $this->db->join('class', 'class.id = fee_allocation.class_id ');
+        $this->db->join('section', 'section.id = fee_allocation.section_id ');
+        // $this->db->join('fee_groups', 'fee_groups.id = fee_allocation.group_id ');
+        $this->db->join('branch', 'branch.id = fee_allocation.branch_id ');
+        $this->db->join('student', 'student.id = fee_allocation.student_id');
 
+
+
+        $result = $this->db->get()->result_array();
+        return $result;
+
+    }
+    public function getClassandSection()
+    {
+        $this->db->select('branch.id as branch_id,class.name as class_name,section.name as section_name');
+        $this->db->from('branch');
+        $this->db->join('class', 'class.branch_id = branch.id ');
+        $this->db->join('section', 'section.branch_id = branch.id');
+        $result = $this->db->get()->result_array();
+        return $result;
+
+    }
     public function getInvoiceList($class_id, $section_id, $branch_id)
     {
         $this->db->select('e.student_id,e.roll,s.first_name,s.last_name,s.register_no,s.mobileno,c.name as class_name,se.name as section_name');
