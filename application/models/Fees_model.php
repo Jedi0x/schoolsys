@@ -131,7 +131,7 @@ class Fees_model extends MY_Model
             'description' => $data['description'],
             # Added by JR
             'frequency' =>  serialize($data['frequency']),
-            'frequency_type' =>$data['frequency_type']
+            'frequency_type' => $data['frequency_type']
             # END
         );
         if (!isset($data['type_id'])) {
@@ -229,6 +229,34 @@ class Fees_model extends MY_Model
         }
         return $result;
     }
+
+
+    # Added by JR
+
+    public function getFeeAllocatedList($class_id, $section_id, $branch_id)
+    {
+        $this->db->select('e.student_id,e.roll,s.first_name,s.last_name,s.register_no,s.mobileno,c.name as class_name,se.name as section_name');
+        $this->db->from('fee_allocation as fa');
+        $this->db->join('enroll as e', 'e.student_id = fa.student_id', 'inner');
+        $this->db->join('student as s', 's.id = e.student_id', 'left');
+        $this->db->join('class as c', 'c.id = e.class_id', 'left');
+        $this->db->join('section as se', 'se.id = e.section_id', 'left');
+        $this->db->where('fa.branch_id', $branch_id);
+        $this->db->where('fa.session_id', get_session_id());
+        $this->db->where('e.class_id', $class_id);
+        if ($section_id != 'all') {
+            $this->db->where('e.section_id', $section_id);
+        }
+        $this->db->group_by('fa.student_id');
+        $this->db->order_by('e.id', 'asc');
+        $result = $this->db->get()->result_array();
+        foreach ($result as $key => $value) {
+            $result[$key]['feegroup'] = $this->getfeeGroup($value['student_id']);
+        }
+        return $result;
+    }
+
+    # END
 
     public function getDueInvoiceList($class_id, $section_id, $feegroup_id, $fee_feetype_id)
     {
@@ -591,4 +619,96 @@ class Fees_model extends MY_Model
         $this->db->where('id', $accountID);
         $this->db->update('accounts', array('balance' => $bal));
     }
+
+
+    # Added by JR
+
+    public function fee_voucher($data)
+    {
+        $this->db->insert('fee_vouchers', $data);
+        return $this->db->insert_id();
+    }
+
+    public function all_vouchers()
+    {
+        $this->db->select('enroll.student_id,enroll.roll,student.first_name,student.last_name,student.register_no,student.mobileno,class.name as class_name,section.name as section_name');
+        $this->db->from('fee_vouchers');
+        $this->db->join('fee_allocation', 'fee_allocation.student_id = fee_vouchers.student_id');
+        $this->db->join('enroll', 'enroll.student_id = fee_allocation.student_id');
+        $this->db->join('student', 'student.id = enroll.student_id');
+        $this->db->join('class', 'class.id = enroll.class_id', 'left');
+        $this->db->join('section', 'section.id = enroll.section_id', 'left');
+        $this->db->where('fee_allocation.session_id', get_session_id());
+        $this->db->group_by('fee_vouchers.student_id');
+        $this->db->order_by('enroll.id', 'asc');
+
+        $result = $this->db->get()->result_array();
+        foreach ($result as $key => $value) {
+            $result[$key]['feegroup'] = $this->getfeeGroup($value['student_id']);
+        }
+        return $result;
+    }
+
+
+
+    public function getVoucherList($student_name='', $father_name='', $registration_no='', $roll_no='', $father_mobile_no='', $father_nic_no='', $voucher_no = '', $voucher_bar_code = '', $bio_matric_impression = '')
+    {
+        $this->db->select('enroll.student_id,enroll.roll,student.first_name,student.last_name,student.register_no,student.mobileno,class.name as class_name,section.name as section_name, fee_vouchers.voucher_no as voucher_no, fee_vouchers.id as fee_voucher_id');
+        $this->db->from('fee_vouchers');
+        $this->db->join('fee_allocation', 'fee_allocation.student_id = fee_vouchers.student_id');
+        $this->db->join('enroll', 'enroll.student_id = fee_allocation.student_id');
+        $this->db->join('student', 'student.id = enroll.student_id');
+        $this->db->join('parent', 'parent.id = student.parent_id');
+        $this->db->join('class', 'class.id = enroll.class_id', 'left');
+        $this->db->join('section', 'section.id = enroll.section_id', 'left');
+        $this->db->group_by('fee_vouchers.student_id');
+        $this->db->order_by('enroll.id', 'asc');
+
+        if (!empty($student_name)){
+            $this->db->where('CONCAT(student.first_name, \' \', student.last_name) = ', $student_name);
+        }
+
+        if (!empty($father_name)){
+            $this->db->where('parent.father_name', $father_name);
+        }
+
+
+        if (!empty($registration_no)){
+            $this->db->where('student.register_no', $registration_no);
+        }
+
+        if (!empty($roll_no)){
+            $this->db->where('enroll.roll', $roll_no);
+        }
+
+        if (!empty($father_mobile_no)){
+            $this->db->where('parent.mobileno', $father_mobile_no);
+        }
+
+        // if (!empty($father_nic_no)){
+        //     $this->db->where('register_no', $father_nic_no);
+        // }
+
+        if (!empty($voucher_no)){
+            $this->db->where('fee_vouchers.voucher_no', $voucher_no);
+        }
+
+
+        if (!empty($voucher_bar_code)){
+            $this->db->where('fee_vouchers.voucher_barcode', $voucher_bar_code);
+        }
+
+
+        // if (!empty($bio_matric_impression)){
+        //     $this->db->where('student.bio_matric_impression', $bio_matric_impression);
+        // }
+
+        $result = $this->db->get()->result_array();
+        foreach ($result as $key => $value) {
+            $result[$key]['feegroup'] = $this->getfeeGroup($value['student_id']);
+        }
+        return $result;
+    }
+
+    # END
 }

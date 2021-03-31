@@ -1114,6 +1114,11 @@
                             </li>
 
                             <?php } if(get_permission('invoice', 'is_view')) { ?>
+                            <li class="<?php if ($sub_page == 'fees/collection') echo 'nav-active';?>">
+                                <a href="<?=base_url('fees/collection')?>"><span><i class="fas fa-caret-right"></i><?=translate('fee_collection')?></span></a>
+                            </li>
+
+                            <?php } if(get_permission('invoice', 'is_view')) { ?>
                             <li class="<?php if ($sub_page == 'fees/invoice_list' || $sub_page == 'fees/collect') echo 'nav-active';?>">
                                 <a href="<?=base_url('fees/invoice_list')?>"><span><i class="fas fa-caret-right"></i><?=translate('payments_history')?></span></a>
                             </li>

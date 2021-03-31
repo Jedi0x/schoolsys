@@ -472,3 +472,27 @@ function debug($arr, $exit = false)
   if($exit)
     exit;
 }
+
+function get_option($name='')
+{
+    $CI = & get_instance();
+    $CI->db->select('value');
+    $CI->db->where('name', $name);
+    $row = $CI->db->get('options')->row();
+    if ($row) {
+        $val = $row->value;
+    }else{
+        $val= '';
+    }
+
+    return $val;
+}
+
+
+function voucher_no()
+{
+    $voucher_no = str_pad(get_option('next_voucher_number'), get_option('number_padding_prefixes'), '0', STR_PAD_LEFT);
+
+    return $voucher_no;
+}
+

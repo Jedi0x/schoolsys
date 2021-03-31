@@ -383,7 +383,7 @@ class Fees extends Admin_Controller
         }
     }
 
-    public function allocation()
+    public function allocation($param = '')
     {
         if (!get_permission('fees_allocation', 'is_add')) {
             access_denied();
@@ -392,20 +392,18 @@ class Fees extends Admin_Controller
         if (isset($_POST['search'])) {
             $this->data['class_id'] = $this->input->post('class_id');
             $this->data['section_id'] = $this->input->post('section_id');
-            // $this->data['fee_group_id'] = $this->input->post('fee_group_id');
+            $this->data['fee_group_id'] = $this->input->post('fee_group_id');
             $this->data['branch_id'] = $branchID;
             $this->data['studentlist'] = $this->fees_model->getStudentAllocationList($this->data['class_id'], $this->data['section_id'],'', $branchID);
         }
         if (isset($_POST['save'])) {
-
-     
 
             $student_array = $this->input->post('stu_operations');
             $fee_groupID = $this->input->post('fee_group_id');
             foreach ($student_array as $key => $value) {
                 $arrayData = array(
                     'student_id' => $value,
-                    // 'group_id' => $fee_groupID,
+                    'group_id' => $fee_groupID,
                     'session_id' => get_session_id(),
                     'branch_id' => $branchID,
                     'class_id' => $this->input->post('class_id'),
@@ -420,26 +418,33 @@ class Fees extends Admin_Controller
             if (!empty($student_array)) {
                 $this->db->where_not_in('student_id', $student_array);
             }
-            // $this->db->where('group_id', $fee_groupID);
+            $this->db->where('group_id', $fee_groupID);
             $this->db->where('session_id', get_session_id());
             $this->db->delete('fee_allocation');
-            // echo $this->db->last_query();
-            // exit();
+          
             set_alert('success', translate('information_has_been_saved_successfully'));
-            redirect(base_url('fees/allocation'));
+            # Added by JR
+            $active_tab = 'show_all';
+            redirect(base_url('fees/allocation/'.$active_tab));
+            # END
         }
 
         $this->data['getfeeallocation'] = $this->fees_model->getfeeallocation();
         
-        // echo "<pre>";
-        // print_r($this->fees_model->getfeeallocation());
-        // exit();
+
         $this->data['branch_id'] = $branchID;
         $this->data['title'] = translate('fees_allocation');
         $this->data['categorylist'] = $this->app_lib->getTable('fee_allocation', array('t.session_id' => get_session_id()));
-        // echo "<pre>";
-        // print_r($this->app_lib->getTable('fee_allocation', array('t.session_id' => get_session_id())));
-        // exit();
+
+        # Added by JR
+        if(!empty($param)){
+            $this->data['active'] = $param;
+        }else{
+            $this->data['active'] = 'allocate_fee';
+        }
+
+        # END
+
         $this->data['sub_page'] = 'fees/allocation';
         $this->data['main_menu'] = 'fees';
         $this->load->view('layout/index', $this->data);
@@ -884,7 +889,6 @@ class Fees extends Admin_Controller
 
     public function create_voucher()
     {
-
         if (!get_permission('invoice', 'is_view')) {
             access_denied();
         }
@@ -912,14 +916,102 @@ class Fees extends Admin_Controller
 
 
         if($this->input->post('voucher')){
-            debug($this->input->post(),true);
+            $students = $this->input->post('student_id');
+            $carry_balance = !empty($this->input->post('carry_balance')) ? 1 : 0;
+            $fee_month = $this->input->post('fee_month');
+            $due_date = $this->input->post('due_date');
+            $valid_date = $this->input->post('valid_date');
+            $fee_instruction = $this->input->post('fee_instruction');
+
+            if(is_array($students)){
+                foreach ($students as $key => $value) {
+                    $fee_voucher = array(
+                        'voucher_no' => voucher_no(),
+                        'voucher_barcode' => uniqid(),
+                        'student_id' => $value,
+                        'carry_balance' => $carry_balance,
+                        'fee_month' => serialize($fee_month),
+                        'fee_instruction' => $fee_instruction,
+                        'session_id' => get_session_id(),
+                        'due_date' => $due_date,
+                        'valid_date' => $valid_date,
+                    );
+
+                    $success = $this->fees_model->fee_voucher($fee_voucher);
+                    if($success){
+                        // Update next invoice number in settings
+                        $this->db->where('name', 'next_voucher_number');
+                        $this->db->set('value', 'value+1', false);
+                        $this->db->update('options');
+                    }
+                }
+                set_alert('success', translate('information_has_been_saved_successfully'));
+               
+            }else{
+                $fee_voucher = array(
+                    'voucher_no' => voucher_no(),
+                    'voucher_barcode' => uniqid(),
+                    'student_id' => $students,
+                    'carry_balance' => $carry_balance,
+                    'fee_month' => serialize($fee_month),
+                    'fee_instruction' => $fee_instruction,
+                    'session_id' => get_session_id(),
+                    'due_date' => $due_date,
+                    'valid_date' => $valid_date,
+                );
+
+                $success = $this->fees_model->fee_voucher($fee_voucher);
+                if($success){
+                        // Update next invoice number in settings
+                        $this->db->where('name', 'next_voucher_number');
+                        $this->db->set('value', 'value+1', false);
+                        $this->db->update('options');
+                }
+            }
+
+            if($success){
+                set_alert('success', translate('information_has_been_saved_successfully'));
+                $array = array('status' => 'success', 'url' => base_url('fees/create_voucher')); 
+            }else{
+                $array = array('status' => 'fail', 'error' => translate('something_went_wrong'));
+            }
+            
+            echo json_encode($array);
+            exit();
+
+
         }
 
-
-   
+        $this->data['all_vouchers'] = $this->fees_model->all_vouchers();
         $this->data['branch_id'] = $branchID;
         $this->data['title'] = translate('create_voucher');
         $this->data['sub_page'] = 'fees/create_voucher';
+        $this->data['main_menu'] = 'fees';
+        $this->load->view('layout/index', $this->data);
+    }
+
+
+    public function collection()
+    {
+
+        if ($this->input->post('search')) {
+            $student_name = $this->input->post('student_name');
+            $father_name  = $this->input->post('father_name');
+            $registration_no  = $this->input->post('registration_no');
+            $roll_no = $this->input->post('roll_no');
+            $father_mobile_no = $this->input->post('father_mobile_no');
+            $father_nic_no = $this->input->post('father_nic_no');
+            $voucher_no = $this->input->post('voucher_no');
+            $voucher_bar_code = $this->input->post('voucher_bar_code');
+            $bio_matric_impression = $this->input->post('bio_matric_impression');
+
+
+            $this->data['voucherlist'] = $this->fees_model->getVoucherList($student_name, $father_name ,$registration_no, $roll_no, $father_mobile_no, $father_nic_no, $voucher_no, $voucher_bar_code, $bio_matric_impression);
+
+        }
+
+        $this->data['title'] = translate('fee_collection');
+        $this->data['sub_page'] = 'fees/collection';
         $this->data['main_menu'] = 'fees';
         $this->load->view('layout/index', $this->data);
     }
