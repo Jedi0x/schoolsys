@@ -28,11 +28,22 @@
 									</div>
 								</div>
 								<div class="col-md-6 text-right">
-									<h4 class="mt-none mb-none text-dark">Invoice No #<?=$invoice['invoice_no']?></h4>
+									<h4 class="mt-none mb-none text-dark">Voucher No #<?=$voucher->voucher_no?></h4>
 									<p class="mb-none">
-										<span class="text-dark"><?=translate('date')?> : </span>
-										<span class="value"><?=_d(date('Y-m-d'))?></span>
+										<span class="text-dark"><?=translate('voucher_month')?> : </span>
+										<span class="value"><?=get_voucher_month($voucher->fee_month)?></span>
 									</p>
+
+									<p class="mb-none">
+										<span class="text-dark"><?=translate('due_date')?> : </span>
+										<span class="value"><?=_d($voucher->due_date)?></span>
+									</p>
+
+									<p class="mb-none">
+										<span class="text-dark"><?=translate('valid_date')?> : </span>
+										<span class="value"><?=_d($voucher->valid_date)?></span>
+									</p>
+
 									<p class="mb-none">
 										<span class="text-dark"><?=translate('status')?> : </span>
 										<?php
@@ -90,12 +101,9 @@
 									<tr class="text-dark">
 										<th id="cell-id" class="text-weight-semibold">#</th>
 										<th id="cell-item" class="text-weight-semibold"><?=translate("fees_type")?></th>
-										<th id="cell-id" class="text-weight-semibold"><?=translate("due_date")?></th>
-										<th id="cell-price" class="text-weight-semibold"><?=translate("status")?></th>
 										<th id="cell-price" class="text-weight-semibold"><?=translate("amount")?></th>
 										<th id="cell-price" class="text-weight-semibold"><?=translate("discount")?></th>
 										<th id="cell-price" class="text-weight-semibold"><?=translate("fine")?></th>
-										<th id="cell-price" class="text-weight-semibold"><?=translate("paid")?></th>
 										<th id="cell-total" class="text-center text-weight-semibold"><?=translate("balance")?></th>
 									</tr>
 								</thead>
@@ -109,17 +117,45 @@
 										$total_amount = 0;
 										$typeData = array('' => translate('select'));
 										$allocations = $this->fees_model->getInvoiceDetails($basic['id']);
+
+
 										foreach ($allocations as $row) {
 											$deposit = $this->fees_model->getStudentFeeDeposit($row['allocation_id'], $row['fee_type_id']);
+
 											$type_discount = $deposit['total_discount'];
+
 											$type_fine = $deposit['total_fine'];
 											$type_amount = $deposit['total_amount'];
-											$balance = $row['amount'] - ($type_amount + $type_discount);
+
+
+											$discount_info = get_fee_type_discount($student_id,$row['fee_type_id']);
+
+											$discount_added = 0;
+											if(!empty($discount_info)){
+												if(!empty($discount_info->discount)){
+													$type_discount = number_format($discount_info->discount, 2, '.', '');
+													
+												}else{
+													$total_discount += 0;
+													$type_discount = number_format(0, 2, '.', '');
+												}
+											}
+
+											$type_fine = number_format(0, 2, '.', '');
+
+											$fine = getBalanceByType($row['allocation_id'], $row['fee_type_id']);
+
+											if($fine > 0){
+												$type_fine =  number_format($fine, 2, '.', '');
+											}
+
+											$balance = ($row['amount'] - $type_discount) + $type_fine;
 											$total_discount += $type_discount;
 											$total_fine += $type_fine;
 											$total_paid += $type_amount;
 											$total_balance += $balance;
 											$total_amount += $row['amount'];
+
 											if ($balance != 0) {
 											 	$typeData[$row['allocation_id'] . "|" . $row['fee_type_id']] = $row['name'];
 											}
@@ -127,26 +163,10 @@
 									<tr>
 										<td><?php echo $count++;?></td>
 										<td class="text-weight-semibold text-dark"><?=$row['name']?></td>
-										<td><?=_d($row['due_date'])?></td>
-										<td><?php 
-											$status = 0;
-											$labelmode = '';
-											if($type_amount == 0) {
-												$status = translate('unpaid');
-												$labelmode = 'label-danger-custom';
-											} elseif($balance == 0) {
-												$status = translate('total_paid');
-												$labelmode = 'label-success-custom';
-											} else {
-												$status = translate('partly_paid');
-												$labelmode = 'label-info-custom';
-											}
-											echo "<span class='label ".$labelmode." '>".$status."</span>";
-										?></td>
 										<td><?php echo $currency_symbol . $row['amount'];?></td>
 										<td><?php echo $currency_symbol . $type_discount;?></td>
 										<td><?php echo $currency_symbol . $type_fine;?></td>
-										<td><?php echo $currency_symbol . $type_amount;?></td>
+										
 										<td class="text-center"><?php echo $currency_symbol . number_format($balance, 2, '.', '');?></td>
 									</tr>
 									<?php } ?>
@@ -184,7 +204,7 @@
 						</div>
 					</div>
 					<div class="text-right mr-lg hidden-print">
-						<button onClick="fn_printElem('invoice_print')" class="btn btn-default ml-sm"><i class="fas fa-print"></i> <?=translate('print')?></button>
+						<button onclick="collect_fees(<?=$student_id?>,1);" class="btn btn-default ml-sm"><i class="fas fa-print"></i> <?=translate('collect_fee')?></button>
 					</div>
 				</div>
 			</div>
@@ -445,6 +465,41 @@
 		</div>
 	</div>
 </section>
+
+<!-- Fee Collect Modal -->
+<div id="feeCollectModal" class="zoom-anim-dialog modal-block modal-block-lg mfp-hide">
+    <section class="panel">
+        <div class="panel-heading">
+            <h4 class="panel-title"><i class="fas fa-plus-circle"></i> <?php echo translate('fee_collect'); ?></h4>
+        </div>
+		<?php echo form_open($this->uri->uri_string(), array('class' => 'form-horizontal frm-submit')); ?>
+		<div class="panel-body">
+
+			<div id="fee_collect_hidden_feilds"></div>
+
+			
+			
+			<div class="form-group mb-md">
+				<label class="control-label"><?php echo translate('paid_amount'); ?> <span class="required">*</span></label>
+				<input type="number" min="0" class="form-control" value="" name="paid_amount" id="paid_amount" />
+				<span class="error"></span>
+			</div>
+		</div>
+
+		<footer class="panel-footer">
+			<div class="row">
+				<div class="col-md-12 text-right">
+					<button type="submit" class="btn btn-default mr-xs" data-loading-text="<i class='fas fa-spinner fa-spin'></i> Processing">
+						<i class="fas fa-plus-circle"></i> <?=translate('collect') ?>
+					</button>
+					<button class="btn btn-default modal-dismiss"><?=translate('cancel') ?></button>
+				</div>
+			</div>
+		</footer>
+		<?php echo form_close();?>
+    </section>
+</div>
+
 
 <script type="text/javascript">
     $('#fees_type').on("change", function(){

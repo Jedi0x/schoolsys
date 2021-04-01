@@ -2045,4 +2045,7 @@ function collect_fees(student_id,voucher_id) {
 	mfp_modal('#feeCollectModal');
 }
 
+
+
+
 // END

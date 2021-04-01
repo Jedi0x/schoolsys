@@ -4,7 +4,10 @@ $widget = (is_superadmin_loggedin() ? 3 : 4);
 $branchID = $student['branch_id'];
 $getParent = $this->student_model->get('parent', array('id' => $student['parent_id']), true);
 $previous_details = json_decode($student['previous_details'], true);
+
 ?>
+
+
 <div class="row appear-animation" data-appear-animation="<?=$global_config['animations'] ?>" data-appear-animation-delay="100">
 	<div class="col-md-12 mb-lg">
 		<div class="profile-head">
@@ -430,16 +433,31 @@ $previous_details = json_decode($student['previous_details'], true);
 				</div>
 			</div>
 			
+
+			<style type="text/css">
+				.mt-5{
+					margin-top: 5px;
+				}
+			</style>
+
+			<?php
+				$show = '';
+				$aria = "false";
+				if($this->session->flashdata('active_tab')){
+					$show = 'show';
+					$aria = "true";
+				}
+			?>
 			<!-- student fees report user Interface -->
             <div class="panel panel-accordion">
 				<div class="panel-heading">
 					<h4 class="panel-title">
-						<a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#fees">
+						<a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#fees" aria-expanded="<?=$aria?>">
 							<i class="fas fa-money-check"></i> <?=translate('fees')?>
 						</a>
 					</h4>
 				</div>
-				<div id="fees" class="accordion-body collapse">
+				<div id="fees" class="accordion-body collapse <?=$show?>">
 					<div class="panel-body">
 						<div class="table-responsive mt-md mb-md">
 							<table class="table table-bordered table-condensed table-hover mb-none tbr-top">
@@ -451,6 +469,7 @@ $previous_details = json_decode($student['previous_details'], true);
 										<th><?=translate("status")?></th>
 										<th><?=translate("amount")?></th>
 										<th><?=translate("discount")?></th>
+										<th><?=translate("remarks")?></th>
 										<th><?=translate("fine")?></th>
 										<th><?=translate("paid")?></th>
 										<th><?=translate("balance")?></th>
@@ -476,7 +495,25 @@ $previous_details = json_decode($student['previous_details'], true);
 											$total_paid += $type_amount;
 											$total_balance += $balance;
 											$total_amount += $fee['amount'];
-			
+
+											$discount_info = get_fee_type_discount($student['id'],$fee['fee_type_id']);
+
+
+											$discount_added = '0.00';
+											$discount_remarks = 'Add Remarks';
+
+											if(!empty($discount_info)){
+												$total_discount += $discount_info->discount;
+												$discount_added = number_format($discount_info->discount, 2, '.', '');
+												
+												if(!empty($discount_info->remarks)){
+													$discount_remarks = $discount_info->remarks;
+												}else{
+													$discount_remarks = 'Add Remarks';
+												}
+											}
+
+											
 										?>
 									<tr>
 										<td><?php echo $count++;?></td>
@@ -498,7 +535,35 @@ $previous_details = json_decode($student['previous_details'], true);
 											echo "<span class='label ".$labelmode." '>".$status."</span>";
 										?></td>
 										<td><?php echo $currency_symbol . $fee['amount'];?></td>
-										<td><?php echo $currency_symbol . $type_discount;?></td>
+										<td><p data-html="true" title="Discount" data-toggle="popover"  data-content='<?php echo form_open("student/discount", array("class" => "form-horizontal frm-submit-discount" )); ?>
+											<input type="number" required name="discount" min="0" class="form-control" value="<?php echo $discount_added;?>">
+											<input type="hidden" name="fee_type_id" value="<?=$fee['fee_type_id']?>">
+											<input type="hidden" name="student_id" value="<?php echo $student['id']; ?>" >
+											<input type="hidden" name="add_discount" value="1">
+											<div class="row">
+												<div class="col-md-12 text-right">
+													<button type="submit" class="btn btn-default mt-5" data-loading-text="Processing">
+														<i class="fas fa-plus-circle"></i> <?=translate('add') ?>
+													</button>
+												</div>
+											</div>
+											<?php echo form_close();?>'><?php echo $currency_symbol . $discount_added;?> </p>
+										</td>
+										<td>
+											<p data-html="true" title="Discount Remarks" data-toggle="popover"  data-content='<?php echo form_open("student/discount", array("class" => "form-horizontal frm-submit-discount" )); ?>
+											<textarea class="form-control" required rows="4" name="comment" placeholder="Enter your Remarks"><?=$discount_remarks?></textarea>
+											<input type="hidden" name="fee_type_id" value="<?=$fee['fee_type_id']?>">
+											<input type="hidden" name="student_id" value="<?php echo $student['id']; ?>" >
+											<input type="hidden" name="discount_comment" value="1">
+											<div class="row">
+												<div class="col-md-12 text-right">
+													<button type="submit" class="btn btn-default mt-5" data-loading-text="Processing">
+														<i class="fas fa-plus-circle"></i> <?=translate('add') ?>
+													</button>
+												</div>
+											</div>
+											<?php echo form_close();?>'><?=$discount_remarks?></p>
+										</td>
 										<td><?php echo $currency_symbol . $type_fine;?></td>
 										<td><?php echo $currency_symbol . $type_amount;?></td>
 										<td><?php echo $currency_symbol . number_format($balance, 2, '.', '');?></td>
@@ -511,8 +576,10 @@ $previous_details = json_decode($student['previous_details'], true);
 										<th></th>
 										<th></th>
 										<th></th>
+
 										<th><?php echo $currency_symbol . number_format($total_amount, 2, '.', ''); ?></th>
 										<th><?php echo $currency_symbol . number_format($total_discount, 2, '.', ''); ?></th>
+										<th></th>
 										<th><?php echo $currency_symbol . number_format($total_fine, 2, '.', ''); ?></th>
 										<th><?php echo $currency_symbol . number_format($total_paid, 2, '.', ''); ?></th>
 										<th><?php echo $currency_symbol . number_format($total_balance, 2, '.', ''); ?></th>
@@ -1040,4 +1107,38 @@ $previous_details = json_decode($student['previous_details'], true);
 
 <script type="text/javascript">
 	var authenStatus = "<?=$student['active']?>";
+	$(document).on('submit','form',function(e){
+		e.preventDefault();
+		var btn = $(this).find('[type="submit"]');
+
+		$.ajax({
+			url: $(this).attr('action'),
+			type: "POST",
+			data: $(this).serialize(),
+			dataType: 'json',
+			beforeSend: function () {
+				btn.button('loading');
+			},
+			success: function (data) {
+				$('.error').html("");
+				if (data.status == "fail") {
+					$.each(data.error, function (index, value) {
+						$this.find("[name='" + index + "']").parents('.form-group').find('.error').html(value);
+					});
+					btn.button('reset');
+				} else if (data.status == "access_denied") {
+					window.location.href = base_url + "dashboard";
+				} else {
+					if (data.url) {
+						window.location.href = data.url;
+					} else{
+						location.reload(true);
+					}
+				}
+			},
+			error: function () {
+				btn.button('reset');
+			}
+		});
+	});
 </script>

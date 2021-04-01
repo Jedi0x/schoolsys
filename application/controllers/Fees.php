@@ -394,7 +394,7 @@ class Fees extends Admin_Controller
             $this->data['section_id'] = $this->input->post('section_id');
             $this->data['fee_group_id'] = $this->input->post('fee_group_id');
             $this->data['branch_id'] = $branchID;
-            $this->data['studentlist'] = $this->fees_model->getStudentAllocationList($this->data['class_id'], $this->data['section_id'],'', $branchID);
+            $this->data['studentlist'] = $this->fees_model->getStudentAllocationLists($this->data['class_id'], $this->data['section_id'],'', $branchID);
         }
         if (isset($_POST['save'])) {
 
@@ -499,6 +499,8 @@ class Fees extends Admin_Controller
         if (!get_permission('invoice', 'is_view')) {
             access_denied();
         }
+
+        $this->data['student_id'] = $id;
         $this->data['invoice'] = $this->fees_model->getInvoiceStatus($id);
         $this->data['basic'] = $this->fees_model->getInvoiceBasic($id);
         $this->data['title'] = translate('invoice_history');
@@ -506,6 +508,25 @@ class Fees extends Admin_Controller
         $this->data['sub_page'] = 'fees/collect';
         $this->load->view('layout/index', $this->data);
     }
+
+    # Added by JR
+    public function collect($id = '')
+    {
+        if (!get_permission('invoice', 'is_view')) {
+            access_denied();
+        }
+
+        $this->data['student_id'] = $id;
+        $this->data['invoice'] = $this->fees_model->getInvoiceStatus($id);
+        $this->data['voucher'] = $this->fees_model->getVoucherDetails($id);
+        $this->data['basic'] = $this->fees_model->getInvoiceBasic($id);
+        $this->data['title'] = translate('fee_collection');
+        $this->data['main_menu'] = 'fees';
+        $this->data['sub_page'] = 'fees/collect';
+        $this->load->view('layout/index', $this->data);
+    }
+
+    # END
 
     public function invoicePrint()
     {

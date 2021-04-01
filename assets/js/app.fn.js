@@ -5,6 +5,7 @@
     {
         var $this = $(el);
         $this.on('submit', function(e){
+        
             e.preventDefault();
             var btn = $this.find('[type="submit"]');
             

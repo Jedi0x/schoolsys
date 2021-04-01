@@ -496,3 +496,76 @@ function voucher_no()
     return $voucher_no;
 }
 
+function get_fee_type_discount($student,$fee_type)
+{
+    $CI = & get_instance();
+    $CI->db->select('*');
+    $CI->db->where('student_id', $student);
+    $CI->db->where('fee_type', $fee_type);
+    $row = $CI->db->get('student_discount')->row();
+    return $row;  
+}
+
+function getBalanceByType($fee_allocation_id,$fee_type_id)
+{
+    $CI = & get_instance();
+    $input = $fee_allocation_id;
+    if (empty($input)) {
+        $balance = 0;
+        $fine = 0;
+    } else {
+        $fine = $CI->fees_model->feeFineCalculation($fee_allocation_id, $fee_type_id);
+        $b = $CI->fees_model->getBalance($fee_allocation_id, $fee_type_id);
+        $balance = $b['balance'];
+        $fine = abs($fine - $b['fine']);
+    }
+    return $fine;
+}
+
+function get_voucher_month($months)
+{
+    $months = unserialize($months);
+   
+    $return_months = array();
+    if(in_array(1, $months)){
+        array_push($return_months, 'January');
+    }
+    if(in_array(2, $months)){
+        array_push($return_months, 'February');
+    }
+    if(in_array(3, $months)){
+        array_push($return_months, 'March');
+    }
+    if(in_array(4, $months)){
+        array_push($return_months, 'April');
+    }
+    if(in_array(5, $months)){
+        array_push($return_months, 'May');
+    }
+    if(in_array(6, $months)){
+        array_push($return_months, 'June');
+    }
+    if(in_array(7, $months)){
+        array_push($return_months, 'July');
+    }
+    if(in_array(8, $months)){
+        array_push($return_months, 'August');
+    }
+    if(in_array(9, $months)){
+        array_push($return_months, 'September');
+    }
+    if(in_array(10, $months)){
+        array_push($return_months, 'October');
+    }
+    if(in_array(11, $months)){
+        array_push($return_months, 'November');
+    }
+    if(in_array(12, $months)){
+        array_push($return_months, 'December');
+    }
+
+    return implode(", ",$return_months);
+}
+
+
+

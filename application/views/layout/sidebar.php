@@ -1114,23 +1114,11 @@
                             </li>
 
                             <?php } if(get_permission('invoice', 'is_view')) { ?>
-                            <li class="<?php if ($sub_page == 'fees/collection') echo 'nav-active';?>">
+                            <li class="<?php if ($sub_page == 'fees/collection' || $sub_page == 'fees/collect') echo 'nav-active';?>">
                                 <a href="<?=base_url('fees/collection')?>"><span><i class="fas fa-caret-right"></i><?=translate('fee_collection')?></span></a>
                             </li>
 
-                            <?php } if(get_permission('invoice', 'is_view')) { ?>
-                            <li class="<?php if ($sub_page == 'fees/invoice_list' || $sub_page == 'fees/collect') echo 'nav-active';?>">
-                                <a href="<?=base_url('fees/invoice_list')?>"><span><i class="fas fa-caret-right"></i><?=translate('payments_history')?></span></a>
-                            </li>
-                            <?php } if(get_permission('due_invoice', 'is_view')) { ?>
-                            <li class="<?php if ($sub_page == 'fees/due_invoice') echo 'nav-active';?>">
-                                <a href="<?=base_url('fees/due_invoice')?>"><span><i class="fas fa-caret-right"></i><?=translate('due_fees_invoice')?></span></a>
-                            </li>
-                            <?php } if(get_permission('fees_reminder', 'is_view')) { ?>
-                            <li class="<?php if ($sub_page == 'fees/reminder') echo 'nav-active';?>">
-                                <a href="<?=base_url('fees/reminder')?>"><span><i class="fas fa-caret-right"></i><?=translate('fees_reminder')?></span></a>
-                            </li>
-                            <?php } ?>
+                            <?php }   ?>
                         </ul>
                     </li>
                     <?php } ?>

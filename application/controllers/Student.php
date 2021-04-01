@@ -1760,5 +1760,85 @@ class Student extends Admin_Controller
 
     }
 
+
+    public function discount()
+    {
+        $this->session->set_flashdata('active_tab','show');
+        if ($this->input->post('add_discount')) {
+            $student_id = $this->input->post('student_id');
+            $fee_type = $this->input->post('fee_type_id');
+            $discount = $this->input->post('discount');
+
+
+            $this->db->select('*');
+            $this->db->from('student_discount');
+            $this->db->where('student_id', $student_id);
+            $this->db->where('fee_type', $fee_type);
+            $results =  $this->db->get()->row();
+
+            if(!empty($results)){
+                $this->db->set('discount', $discount);
+                $this->db->where('student_id', $student_id);
+                $this->db->where('fee_type', $fee_type);
+                $success =  $this->db->update('student_discount');
+            }else{
+                $data = array(
+                    'student_id' => $student_id,
+                    'fee_type' => $fee_type,
+                    'discount' => $discount,
+                );
+                $this->db->insert('student_discount', $data);
+                $success = $this->db->insert_id();
+            }
+            if($success){
+                set_alert('success', translate('information_has_been_saved_successfully'));
+                $array = array('status' => 'success', 'url' => base_url('student/profile/'.$student_id)); 
+            }else{
+                $array = array('status' => 'fail', 'error' => translate('something_went_wrong'));
+            }
+            
+            echo json_encode($array);
+            exit();
+        }
+
+        if ($this->input->post('discount_comment')) {
+            $student_id = $this->input->post('student_id');
+            $fee_type = $this->input->post('fee_type_id');
+            $comment = $this->input->post('comment');
+
+            $this->db->select('*');
+            $this->db->from('student_discount');
+            $this->db->where('student_id', $student_id);
+            $this->db->where('fee_type', $fee_type);
+            $results =  $this->db->get()->row();
+
+            if(!empty($results)){
+                $this->db->set('remarks', $comment);
+                $this->db->where('student_id', $student_id);
+                $this->db->where('fee_type', $fee_type);
+                $success =  $this->db->update('student_discount');
+            }else{
+                $data = array(
+                    'student_id' => $student_id,
+                    'fee_type' => $fee_type,
+                    'remarks' => $comment,
+                );
+                $this->db->insert('student_discount', $data);
+                $success = $this->db->insert_id();
+            }
+            if($success){
+                set_alert('success', translate('information_has_been_saved_successfully'));
+                $array = array('status' => 'success', 'url' => base_url('student/profile/'.$student_id)); 
+            }else{
+                $array = array('status' => 'fail', 'error' => translate('something_went_wrong'));
+            }
+            
+            echo json_encode($array);
+            exit();
+        }
+
+        echo json_encode(array('status' => $status, 'message' => $message));
+    }
+
 }
 

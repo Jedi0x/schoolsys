@@ -61,6 +61,35 @@ class Fees_model extends MY_Model
         return $this->db->query($sql)->result_array();
     }
 
+
+    # Added by JR
+
+    public function getStudentAllocationLists($classID, $sectionID, $groupID, $branchID)
+    {   
+
+        $sql = "SELECT e.*, s.photo, CONCAT(s.first_name, ' ', s.last_name) as fullname, s.gender, s.register_no, s.parent_id, s.email, s.mobileno, IFNULL(fa.id, 0) as allocation_id
+        FROM enroll as e LEFT JOIN student as s ON e.student_id = s.id LEFT JOIN login_credential as l ON l.user_id = s.id AND l.role = '7' LEFT JOIN
+        fee_allocation as fa ON fa.student_id=e.student_id AND fa.group_id = " . $this->db->escape($groupID) . " AND
+        fa.session_id= " . $this->db->escape(get_session_id());
+
+        if ($classID != 'all') {
+            $sql.= " WHERE e.class_id = " . $this->db->escape($classID);
+        }
+
+        $sql.=" AND e.branch_id = " . $this->db->escape($branchID) . " AND e.session_id = " . $this->db->escape(get_session_id());
+
+
+        if ($sectionID != 'all') {
+            $sql .= " AND e.section_id =" . $this->db->escape($sectionID);
+        }
+        $sql .= " ORDER BY s.id ASC";
+        return $this->db->query($sql)->result_array();
+    }
+
+
+
+    # END
+
     public function getInvoiceStatus($studentID)
     {
         $status = "";
@@ -91,6 +120,14 @@ class Fees_model extends MY_Model
         fee_groups_details ON fee_groups_details.fee_groups_id = fee_allocation.group_id LEFT JOIN fees_type ON fees_type.id = fee_groups_details.fee_type_id WHERE
         fee_allocation.student_id = " . $this->db->escape($studentID) . " AND fee_allocation.session_id = " . $this->db->escape(get_session_id());
         return $this->db->query($sql)->result_array();
+    }
+
+
+    public function getVoucherDetails($studentID)
+    {
+        $sql = "SELECT fee_vouchers.* FROM fee_allocation LEFT JOIN fee_vouchers ON fee_vouchers.student_id = fee_allocation.student_id WHERE
+        fee_allocation.student_id = " . $this->db->escape($studentID) . " AND fee_allocation.session_id = " . $this->db->escape(get_session_id());
+        return $this->db->query($sql)->row();
     }
 
     public function getInvoiceBasic($studentID)
@@ -185,8 +222,10 @@ class Fees_model extends MY_Model
     {
         $this->db->select('student.first_name as student_name,class.name as class_name,section.name as section_name,branch.name as branch_name');
         $this->db->from('fee_allocation');
-        $this->db->join('class', 'class.id = fee_allocation.class_id ');
-        $this->db->join('section', 'section.id = fee_allocation.section_id ');
+        $this->db->join('enroll', 'enroll.student_id = fee_allocation.student_id', 'inner');
+        $this->db->join('class', 'class.id = enroll.class_id ');
+        $this->db->join('section', 'section.id = enroll.section_id ');
+
         // $this->db->join('fee_groups', 'fee_groups.id = fee_allocation.group_id ');
         $this->db->join('branch', 'branch.id = fee_allocation.branch_id ');
         $this->db->join('student', 'student.id = fee_allocation.student_id');
@@ -631,7 +670,7 @@ class Fees_model extends MY_Model
 
     public function all_vouchers()
     {
-        $this->db->select('enroll.student_id,enroll.roll,student.first_name,student.last_name,student.register_no,student.mobileno,class.name as class_name,section.name as section_name');
+        $this->db->select('enroll.student_id,enroll.roll,student.first_name,student.last_name,student.register_no,student.mobileno,class.name as class_name,section.name as section_name,fee_vouchers.voucher_no as voucher_no');
         $this->db->from('fee_vouchers');
         $this->db->join('fee_allocation', 'fee_allocation.student_id = fee_vouchers.student_id');
         $this->db->join('enroll', 'enroll.student_id = fee_allocation.student_id');

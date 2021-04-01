@@ -161,7 +161,11 @@
 								<td>
 									<!-- collect payment -->
 								<?php if (get_permission('collect_fees', 'is_add')) { ?>
-									<a  href="javascript:;" class="btn btn-default btn-circle" onclick="collect_fees('<?=$student_id?>','<?=$fee_voucher_id?>');">
+									<!-- <a  href="javascript:;" class="btn btn-default btn-circle" onclick="collect_fees('<?=$student_id?>','<?=$fee_voucher_id?>');">
+										<i class="far fa-arrow-alt-circle-right"></i> <?=translate('collect')?>
+									</a> -->
+
+									<a href="<?php echo base_url('fees/collect/' . $row['student_id']);?>" class="btn btn-default btn-circle">
 										<i class="far fa-arrow-alt-circle-right"></i> <?=translate('collect')?>
 									</a>
 								<?php } ?>
@@ -181,36 +185,3 @@
 	</div>
 </div>
 
-<!-- Fee Collect Modal -->
-<div id="feeCollectModal" class="zoom-anim-dialog modal-block modal-block-lg mfp-hide">
-    <section class="panel">
-        <div class="panel-heading">
-            <h4 class="panel-title"><i class="fas fa-plus-circle"></i> <?php echo translate('fee_collect'); ?></h4>
-        </div>
-		<?php echo form_open($this->uri->uri_string(), array('class' => 'form-horizontal frm-submit')); ?>
-		<div class="panel-body">
-
-			<div id="fee_collect_hidden_feilds"></div>
-
-			
-			
-			<div class="form-group mb-md">
-				<label class="control-label"><?php echo translate('paid_amount'); ?> <span class="required">*</span></label>
-				<input type="number" min="0" class="form-control" value="" name="paid_amount" id="paid_amount" />
-				<span class="error"></span>
-			</div>
-		</div>
-
-		<footer class="panel-footer">
-			<div class="row">
-				<div class="col-md-12 text-right">
-					<button type="submit" class="btn btn-default mr-xs" data-loading-text="<i class='fas fa-spinner fa-spin'></i> Processing">
-						<i class="fas fa-plus-circle"></i> <?=translate('collect') ?>
-					</button>
-					<button class="btn btn-default modal-dismiss"><?=translate('cancel') ?></button>
-				</div>
-			</div>
-		</footer>
-		<?php echo form_close();?>
-    </section>
-</div>
