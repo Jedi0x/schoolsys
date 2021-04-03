@@ -506,7 +506,7 @@ function get_fee_type_discount($student,$fee_type)
     return $row;  
 }
 
-function getBalanceByType($fee_allocation_id,$fee_type_id)
+function getBalanceByType($fee_allocation_id,$fee_type_id,$voucher_no)
 {
     $CI = & get_instance();
     $input = $fee_allocation_id;
@@ -514,7 +514,8 @@ function getBalanceByType($fee_allocation_id,$fee_type_id)
         $balance = 0;
         $fine = 0;
     } else {
-        $fine = $CI->fees_model->feeFineCalculation($fee_allocation_id, $fee_type_id);
+        $fine = $CI->fees_model->feeFineCalculations($fee_allocation_id, $fee_type_id,$voucher_no);
+
         $b = $CI->fees_model->getBalance($fee_allocation_id, $fee_type_id);
         $balance = $b['balance'];
         $fine = abs($fine - $b['fine']);
@@ -565,6 +566,74 @@ function get_voucher_month($months)
     }
 
     return implode(", ",$return_months);
+}
+
+function get_status($status)
+{
+    if($status == 1){
+        $status_info = 'Paid';
+    } elseif ($status == 2) {
+        $status_info = 'Partial Paid';
+    }else{
+        $status_info = 'Unpaid';
+    }
+    return $status_info;
+}
+
+function check_voucher_month($voucher_id,$fee_type_id)
+{
+    $CI = & get_instance();
+    $check_voucher = $CI->fees_model->check_voucher_month($voucher_id, $fee_type_id);
+    return $check_voucher;
+}
+
+
+function check_added_voucher_month($student_id,$fee_month)
+{
+    $CI = & get_instance();
+    $fail = 0;
+    foreach ($fee_month as $k => $v) {
+        $CI->db->select("*");
+        $CI->db->where('fee_month',$v);
+        $CI->db->where('student_id',$student_id);
+        $CI->db->where('fee_year',date("Y"));
+        $check = $CI->db->get('fee_voucher_months')->row();
+        if(!empty($check)){
+            $fail++;
+        }
+    }
+    if($fail > 0){
+        return false;
+    }else{
+        return true;
+    }
+}
+
+
+function get_paid_amount_voucher($voucher_id)
+{
+    $CI = & get_instance();
+    $CI->db->select("*");
+    $CI->db->where('voucher_id',$voucher_id);
+    $voucher = $CI->db->get('fee_voucher_payments')->row();
+    if(!empty($voucher)){
+        return $voucher->total_paid;
+    }else{
+        return 0;
+    }
+}
+
+function previous_balance($student_id)
+{
+    $CI = & get_instance();
+    $CI->db->select("sum(total_due) as total_due");
+    $CI->db->where('student_id',$student_id);
+    $voucher = $CI->db->get('fee_voucher_payments')->row();
+    if(!empty($voucher)){
+        return $voucher->total_due;
+    }else{
+        return 0;
+    }
 }
 
 

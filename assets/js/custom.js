@@ -2038,10 +2038,9 @@ function create_voucher(student_id) {
 	mfp_modal('#createVoucherModal');
 }
 
-function collect_fees(student_id,voucher_id) {
-	$('#fee_collect_hidden_feilds').html(`<input type='hidden' name='student_id' value='`+student_id+`' />
-		<input type='hidden' name='voucher_id' value='`+voucher_id+`' />
-		<input type='hidden' name='collect_fee' value='1' />`);
+function collect_fees(voucher_id,total_amount,student_id) {
+	$('#fee_collect_hidden_feilds').html(`<input type='hidden' name='amount' value='`+total_amount+`' />
+		<input type='hidden' name='voucher_id' value='`+voucher_id+`' /><input type='hidden' name='student_id' value='`+student_id+`' />`);
 	mfp_modal('#feeCollectModal');
 }
 

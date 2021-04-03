@@ -1,7 +1,26 @@
 <?php
 
+// create new PDF document
+$pdf = new TCPDF('L', PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+
+// set document information
+$pdf->SetTitle('Voucher');
+
+// set default monospaced font
+$pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
+
+// set auto page breaks
+$pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
+
+// set image ratio
+$pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
 
 $pdf->SetFont('dejavusans', '', 7);
+
+// remove header and footer
+$pdf->SetPrintHeader(false);
+$pdf->SetPrintFooter(false);
+$pdf->AddPage();
 
 $header = '
 <table style="color: #fff; padding:35px;">

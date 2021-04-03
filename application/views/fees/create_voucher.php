@@ -24,70 +24,26 @@ if(isset($active_tab)){
 		</ul>
 		<div class="tab-content">
 			<div id="all_vouchers" class="tab-pane <?php echo ($tabs_active == 'all_vouchers' ? 'active' : '' ); ?>">
+				<div class="row">
+					<div class="col-md-12">
+						<section class="panel appear-animation" data-appear-animation="<?= $global_config['animations'] ?>" data-appear-animation-delay="100">
+							<header class="panel-heading">
+								<h4 class="panel-title"><i class="fas fa-list"></i> <?php echo translate('fee_vouchers'); ?></h4>
+							</header>
+							<div class="dx-viewport col-md-12 pt-md  pb-md">        
+								<div id="gridContainer">
+									<div class="options">
+										<div class="caption">Options</div>
+										<div class="option">            
+											<div id="autoExpand"></div>
+										</div>    
+									</div>
+								</div>
+							</div>
+						</section>
 
-				<div class="mb-md mt-md">
-					<div class="export_title"><?=translate('invoice') . " " . translate('list')?></div>
-					<table class="table table-bordered table-condensed table-hover mb-none tbr-top table-export">
-						<thead>
-							<tr>
-								<!-- <th class="hidden-print"> 
-									<div class="checkbox-replace">
-										<label class="i-checks" data-toggle="tooltip" data-original-title="Print Show / Hidden">
-											<input type="checkbox" name="select-all" id="selectAllchkbox"> <i></i>
-										</label>
-									</div>
-								</th> -->
-								<th><?=translate('voucher_no')?></th>
-								<th><?=translate('student')?></th>
-								<th><?=translate('class')?></th>
-								<th><?=translate('section')?></th>
-								<th><?=translate('register_no')?></th>
-								<th><?=translate('roll')?></th>
-								<th><?=translate('mobile_no')?></th>
-								
-								<th><?=translate('status')?></th>
-							</tr>
-						</thead>
-						<tbody>
-							<?php $count = 1; foreach($all_vouchers as $row): ?>
-							<tr>
-								<!-- <td class="hidden-print checked-area hidden-print">
-									<div class="checkbox-replace">
-										<label class="i-checks"><input type="checkbox" name="student_id[]" value="<?=$row['student_id']?>"><i></i></label>
-									</div>
-								</td> -->
-								<td><?php echo $row['voucher_no'];?></td>
-								<td><?php echo $row['first_name'] . ' ' . $row['last_name'];?></td>
-								<td><?php echo $row['class_name'];?></td>
-								<td><?php echo $row['section_name'];?></td>
-								<td><?php echo $row['register_no'];?></td>
-								<td><?php echo $row['roll'];?></td>
-								<td><?php echo $row['mobileno'];?></td>
-								
-								<td>
-									<?php
-										$labelmode = '';
-										$status = $this->fees_model->getInvoiceStatus($row['student_id'])['status'];
-										if($status == 'unpaid') {
-											$status = translate('unpaid');
-											$labelmode = 'label-danger-custom';
-										} elseif($status == 'partly') {
-											$status = translate('partly_paid');
-											$labelmode = 'label-info-custom';
-										} elseif($status == 'total') {
-											$status = translate('total_paid');
-											$labelmode = 'label-success-custom';
-										}
-										echo "<span class='value label " . $labelmode . " '>" . $status . "</span>";
-									?>
-								</td>
-								
-							</tr>
-							<?php  endforeach; ?>
-						</tbody>
-					</table>
+					</div>
 				</div>
-
 			</div>
 
 			<div id="single_voucher" class="tab-pane <?php echo ($tabs_active == 'single_voucher' ? 'active' : '' ); ?>">
@@ -312,7 +268,7 @@ if(isset($active_tab)){
 													<tr>
 														<td class="checked-area">
 															<div class="checkbox-replace">
-																<label class="i-checks"><input type="checkbox" name="stu_voucehr[]" <?=($row['student_id'] != 0 ? 'checked' : "");?> value="<?=$row['student_id']?>"><i></i></label>
+																<label class="i-checks"><input type="checkbox" name="stu_voucehr[]" value="<?=$row['student_id']?>"><i></i></label>
 															</div>
 														</td>
 														<td><?php echo $count++; ?></td>
@@ -443,3 +399,152 @@ if(isset($active_tab)){
 		});
 	});
 </script>
+
+<script>window.jQuery || document.write(decodeURIComponent('%3Cscript src="js/jquery.min.js"%3E%3C/script%3E'))</script>
+<link rel="stylesheet" type="text/css" href="https://cdn3.devexpress.com/jslib/20.2.5/css/dx.common.css" />
+<link rel="stylesheet" type="text/css" href="https://cdn3.devexpress.com/jslib/20.2.5/css/dx.light.css" />
+<script src="https://cdn3.devexpress.com/jslib/20.2.5/js/dx.all.js"></script>
+
+
+
+
+<script>
+    $(function () {
+        var dataGrid = $("#gridContainer").dxDataGrid({
+            dataSource: orders,
+            columnsAutoWidth: true,
+            showBorders: true,
+            grouping: {
+                autoExpandAll: true,
+            },
+            paging: {
+                pageSize: 100
+            },
+            groupPanel: {
+                visible: true
+            },
+            filterRow: {
+                visible: true,
+                applyFilter: "auto"
+            },
+            searchPanel: {
+                visible: true,
+                width: 240,
+                placeholder: "Search..."
+            },
+            headerFilter: {
+                visible: true
+            },
+            columns: [
+                {
+                    dataField: "voucher_no",
+                    caption: "Voucher No",
+                    width: 140,
+                    headerFilter: {
+                        groupInterval: 10000
+                    }
+                },{
+                    dataField: "student_name",
+                    caption: "Student",
+                    width: 140,
+                    headerFilter: {
+                        groupInterval: 10000
+                    }
+                }, {
+                    caption: "Register No",
+                    dataField: "register_no",
+                    headerFilter: {
+                        allowSearch: true
+                    }
+                }, {
+                    caption: "Mobile No",
+                    dataField: "mobileno",
+                    headerFilter: {
+                        allowSearch: true
+                    }
+                }, {
+                    caption: "Section Name",
+                    dataField: "section_name",
+                    headerFilter: {
+                        allowSearch: true
+                    }
+                }, {
+                    caption: "Class Name",
+                    dataField: "class_name",
+                    headerFilter: {
+                        allowSearch: true
+                    }
+                }, {
+                    caption: "Fee Month",
+                    dataField: "fee_month",
+                    headerFilter: {
+                        allowSearch: true
+                    }
+                }
+            ]
+        }).dxDataGrid('instance');
+
+        var applyFilterTypes = [{
+                key: "auto",
+                name: "Immediately"
+            }, {
+                key: "onClick",
+                name: "On Button Click"
+            }];
+
+        var applyFilterModeEditor = $("#useFilterApplyButton").dxSelectBox({
+            items: applyFilterTypes,
+            value: applyFilterTypes[0].key,
+            valueExpr: "key",
+            displayExpr: "name",
+            onValueChanged: function (data) {
+                dataGrid.option("filterRow.applyFilter", data.value);
+            }
+        }).dxSelectBox("instance");
+
+        $("#filterRow").dxCheckBox({
+            text: "Filter Row",
+            value: true,
+            onValueChanged: function (data) {
+                dataGrid.clearFilter();
+                dataGrid.option("filterRow.visible", data.value);
+                applyFilterModeEditor.option("disabled", !data.value);
+            }
+        });
+
+        $("#headerFilter").dxCheckBox({
+            text: "Header Filter",
+            value: true,
+            onValueChanged: function (data) {
+                dataGrid.clearFilter();
+                dataGrid.option("headerFilter.visible", data.value);
+            }
+        });
+
+        function getOrderDay(rowData) {
+            return (new Date(rowData.OrderDate)).getDay();
+        }
+
+        $("#autoExpand").dxCheckBox({
+            value: true,
+            text: "Expand All Groups",
+            onValueChanged: function (data) {
+                dataGrid.option("grouping.autoExpandAll", data.value);
+            }
+        });
+    });
+
+    var orders = <?= json_encode($all_vouchers); ?>;
+</script>
+
+<style>
+    .dx-theme-generic-typography{
+        overflow-y: auto;
+    }
+    .dx-widget {
+        width: 1800px;
+    }
+    .dx-widget tr.dx-datagrid-filter-row{
+        display: none;
+    }
+</style>

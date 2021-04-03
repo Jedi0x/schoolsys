@@ -98,13 +98,6 @@
 					<table class="table table-bordered table-condensed table-hover mb-none tbr-top table-export">
 						<thead>
 							<tr>
-								<!-- <th class="hidden-print"> 
-									<div class="checkbox-replace">
-										<label class="i-checks" data-toggle="tooltip" data-original-title="Print Show / Hidden">
-											<input type="checkbox" name="select-all" id="selectAllchkbox"> <i></i>
-										</label>
-									</div>
-								</th> -->
 								<th><?=translate('voucher_no')?></th>
 								<th><?=translate('student')?></th>
 								<th><?=translate('class')?></th>
@@ -113,6 +106,7 @@
 								<th><?=translate('roll')?></th>
 								<th><?=translate('mobile_no')?></th>
 								<th><?=translate('fee_group')?></th>
+								<th><?=translate('fee_month')?></th>
 								<th><?=translate('status')?></th>
 								<th><?=translate('action')?></th>
 							</tr>
@@ -125,11 +119,6 @@
 							$fee_voucher_id = $row['fee_voucher_id'];
 							?>
 							<tr>
-								<!-- <td class="hidden-print checked-area hidden-print">
-									<div class="checkbox-replace">
-										<label class="i-checks"><input type="checkbox" name="student_id[]" value="<?=$row['student_id']?>"><i></i></label>
-									</div>
-								</td> -->
 								<td><?php echo $row['voucher_no'];?></td>
 								<td><?php echo $row['first_name'] . ' ' . $row['last_name'];?></td>
 								<td><?php echo $row['class_name'];?></td>
@@ -141,17 +130,18 @@
 								foreach ($row['feegroup'] as $key => $value) {
 									echo "- " . $value['name'] . "<br>";
 								} ?></td>
+								<td><?=get_voucher_month($row['fee_month'])?></td>
 								<td>
 									<?php
 										$labelmode = '';
-										$status = $this->fees_model->getInvoiceStatus($row['student_id'])['status'];
-										if($status == 'unpaid') {
+										$status = $row['status'];
+										if($status == '0') {
 											$status = translate('unpaid');
 											$labelmode = 'label-danger-custom';
-										} elseif($status == 'partly') {
+										} elseif($status == '2') {
 											$status = translate('partly_paid');
 											$labelmode = 'label-info-custom';
-										} elseif($status == 'total') {
+										} elseif($status == '1') {
 											$status = translate('total_paid');
 											$labelmode = 'label-success-custom';
 										}
@@ -161,17 +151,15 @@
 								<td>
 									<!-- collect payment -->
 								<?php if (get_permission('collect_fees', 'is_add')) { ?>
-									<!-- <a  href="javascript:;" class="btn btn-default btn-circle" onclick="collect_fees('<?=$student_id?>','<?=$fee_voucher_id?>');">
-										<i class="far fa-arrow-alt-circle-right"></i> <?=translate('collect')?>
-									</a> -->
+	
 
-									<a href="<?php echo base_url('fees/collect/' . $row['student_id']);?>" class="btn btn-default btn-circle">
+									<a href="<?php echo base_url('fees/collect/' . $row['fee_voucher_id']);?>" class="btn btn-default btn-circle">
 										<i class="far fa-arrow-alt-circle-right"></i> <?=translate('collect')?>
 									</a>
 								<?php } ?>
 
 									<!-- delete link -->
-									<a class="btn btn-danger icon btn-circle" onclick="confirm_modal('<?=base_url('fees/invoice_delete/' . $row['student_id'])?>')"><i class="fas fa-trash-alt"></i></a>
+									<!-- a class="btn btn-danger icon btn-circle" onclick="confirm_modal('<?=base_url('fees/invoice_delete/' . $row['fee_voucher_id'])?>')"><i class="fas fa-trash-alt"></i></a> -->
 								</td>
 							</tr>
 							<?php  endforeach; ?>

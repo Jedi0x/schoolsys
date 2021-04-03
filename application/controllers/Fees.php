@@ -516,10 +516,11 @@ class Fees extends Admin_Controller
             access_denied();
         }
 
-        $this->data['student_id'] = $id;
-        $this->data['invoice'] = $this->fees_model->getInvoiceStatus($id);
-        $this->data['voucher'] = $this->fees_model->getVoucherDetails($id);
-        $this->data['basic'] = $this->fees_model->getInvoiceBasic($id);
+        $voucher = $this->fees_model->getVoucherDetails($id);
+        $this->data['student_id'] = $voucher->student_id;
+        $this->data['invoice'] = $this->fees_model->getInvoiceStatus($this->data['student_id']);
+        $this->data['basic'] = $this->fees_model->getInvoiceBasic($this->data['student_id']);
+        $this->data['voucher'] = $voucher;
         $this->data['title'] = translate('fee_collection');
         $this->data['main_menu'] = 'fees';
         $this->data['sub_page'] = 'fees/collect';
@@ -946,12 +947,58 @@ class Fees extends Admin_Controller
 
             if(is_array($students)){
                 foreach ($students as $key => $value) {
+
+                    //check voucher of this student
+
+                    $check = check_added_voucher_month($value,$fee_month);
+
+                    if($check){
+                        $fee_voucher = array(
+                            'voucher_no' => voucher_no(),
+                            'voucher_barcode' => uniqid(),
+                            'student_id' => $value,
+                            'carry_balance' => $carry_balance,
+                            'fee_month' => serialize($fee_month),
+                            'fee_year' => date("Y"),
+                            'fee_instruction' => $fee_instruction,
+                            'session_id' => get_session_id(),
+                            'due_date' => $due_date,
+                            'valid_date' => $valid_date,
+                        );
+
+                        $success = $this->fees_model->fee_voucher($fee_voucher);
+                        if($success){
+                            foreach ($fee_month as $k => $v) {
+                                $this->db->insert('fee_voucher_months', array(
+                                    'fee_voucher_id' => $success,
+                                    'student_id' => $value,
+                                    'fee_month' => $v,
+                                    'fee_year' => date("Y"),
+                                ));
+                            }
+                        // Update next invoice number in settings
+                            $this->db->where('name', 'next_voucher_number');
+                            $this->db->set('value', 'value+1', false);
+                            $this->db->update('options');
+                        }
+                    }
+                    
+                    
+                }
+                set_alert('success', translate('information_has_been_saved_successfully'));
+               
+            }else{
+
+                $check = check_added_voucher_month($students,$fee_month);
+
+                if($check){
                     $fee_voucher = array(
                         'voucher_no' => voucher_no(),
                         'voucher_barcode' => uniqid(),
-                        'student_id' => $value,
+                        'student_id' => $students,
                         'carry_balance' => $carry_balance,
                         'fee_month' => serialize($fee_month),
+                        'fee_year' => date("Y"),
                         'fee_instruction' => $fee_instruction,
                         'session_id' => get_session_id(),
                         'due_date' => $due_date,
@@ -960,41 +1007,29 @@ class Fees extends Admin_Controller
 
                     $success = $this->fees_model->fee_voucher($fee_voucher);
                     if($success){
-                        // Update next invoice number in settings
+
+                        foreach ($fee_month as $k => $v) {
+                            $this->db->insert('fee_voucher_months', array(
+                                'fee_voucher_id' => $success,
+                                'student_id' => $students,
+                                'fee_month' => $v,
+                                'fee_year' => date("Y"),
+                            ));
+                        }
+                    // Update next invoice number in settings
                         $this->db->where('name', 'next_voucher_number');
                         $this->db->set('value', 'value+1', false);
                         $this->db->update('options');
                     }
-                }
-                set_alert('success', translate('information_has_been_saved_successfully'));
-               
-            }else{
-                $fee_voucher = array(
-                    'voucher_no' => voucher_no(),
-                    'voucher_barcode' => uniqid(),
-                    'student_id' => $students,
-                    'carry_balance' => $carry_balance,
-                    'fee_month' => serialize($fee_month),
-                    'fee_instruction' => $fee_instruction,
-                    'session_id' => get_session_id(),
-                    'due_date' => $due_date,
-                    'valid_date' => $valid_date,
-                );
-
-                $success = $this->fees_model->fee_voucher($fee_voucher);
-                if($success){
-                        // Update next invoice number in settings
-                        $this->db->where('name', 'next_voucher_number');
-                        $this->db->set('value', 'value+1', false);
-                        $this->db->update('options');
+                }else{
+                    set_alert('error', translate('voucher_is_already_created'));
+                $array = array('status' => 'success', 'url' => base_url('fees/create_voucher'));
                 }
             }
 
-            if($success){
+            if(isset($success)){
                 set_alert('success', translate('information_has_been_saved_successfully'));
                 $array = array('status' => 'success', 'url' => base_url('fees/create_voucher')); 
-            }else{
-                $array = array('status' => 'fail', 'error' => translate('something_went_wrong'));
             }
             
             echo json_encode($array);
@@ -1003,7 +1038,7 @@ class Fees extends Admin_Controller
 
         }
 
-        $this->data['all_vouchers'] = $this->fees_model->all_vouchers();
+        $this->data['all_vouchers'] = $this->fees_model->all_vouchers_list();
         $this->data['branch_id'] = $branchID;
         $this->data['title'] = translate('create_voucher');
         $this->data['sub_page'] = 'fees/create_voucher';
@@ -1025,8 +1060,6 @@ class Fees extends Admin_Controller
             $voucher_no = $this->input->post('voucher_no');
             $voucher_bar_code = $this->input->post('voucher_bar_code');
             $bio_matric_impression = $this->input->post('bio_matric_impression');
-
-
             $this->data['voucherlist'] = $this->fees_model->getVoucherList($student_name, $father_name ,$registration_no, $roll_no, $father_mobile_no, $father_nic_no, $voucher_no, $voucher_bar_code, $bio_matric_impression);
 
         }
@@ -1037,6 +1070,20 @@ class Fees extends Admin_Controller
         $this->load->view('layout/index', $this->data);
     }
 
+    public function collect_fee()
+    {
+        $success = $this->fees_model->collect_fee($this->input->post());
+        if($success){
+            set_alert('success', translate('information_has_been_saved_successfully'));
+            $array = array('status' => 'success', 'url' => base_url('fees/collect/'.$this->input->post('voucher_id'))); 
+        }
+
+        echo json_encode($array);
+        exit();
+    }
+
+   
+
     public function generate_barcode()
     {
         $this->load->library('barcode');
@@ -1046,8 +1093,8 @@ class Fees extends Admin_Controller
 
     public function generate_pdf()
     {
-        $this->load->library('XYZ');
-        $this->XYZ->voucher();
+        $this->load->library('pdf');
+        $this->load->view('fees/voucherpdf');
 
 
     }
