@@ -945,18 +945,60 @@ class Fees extends Admin_Controller
             $valid_date = $this->input->post('valid_date');
             $fee_instruction = $this->input->post('fee_instruction');
 
-            if(is_array($students)){
-                foreach ($students as $key => $value) {
 
-                    //check voucher of this student
+            $valid = voucher_month_validation($fee_month);
+            if($valid){
+                if(is_array($students)){
+                    foreach ($students as $key => $value) {
 
-                    $check = check_added_voucher_month($value,$fee_month);
+                        //check voucher of this student
+
+                        $check = check_added_voucher_month($value,$fee_month);
+
+                        if($check){
+                            $fee_voucher = array(
+                                'voucher_no' => voucher_no(),
+                                'voucher_barcode' => uniqid(),
+                                'student_id' => $value,
+                                'carry_balance' => $carry_balance,
+                                'fee_month' => serialize($fee_month),
+                                'fee_year' => date("Y"),
+                                'fee_instruction' => $fee_instruction,
+                                'session_id' => get_session_id(),
+                                'due_date' => $due_date,
+                                'valid_date' => $valid_date,
+                            );
+
+                            $success = $this->fees_model->fee_voucher($fee_voucher);
+                            if($success){
+                                foreach ($fee_month as $k => $v) {
+                                    $this->db->insert('fee_voucher_months', array(
+                                        'fee_voucher_id' => $success,
+                                        'student_id' => $value,
+                                        'fee_month' => $v,
+                                        'fee_year' => date("Y"),
+                                    ));
+                                }
+                            // Update next invoice number in settings
+                                $this->db->where('name', 'next_voucher_number');
+                                $this->db->set('value', 'value+1', false);
+                                $this->db->update('options');
+                            }
+                        }
+                        
+                        
+                    }
+                    set_alert('success', translate('information_has_been_saved_successfully'));
+                   
+                }else{
+
+                    $check = check_added_voucher_month($students,$fee_month);
 
                     if($check){
                         $fee_voucher = array(
                             'voucher_no' => voucher_no(),
                             'voucher_barcode' => uniqid(),
-                            'student_id' => $value,
+                            'student_id' => $students,
                             'carry_balance' => $carry_balance,
                             'fee_month' => serialize($fee_month),
                             'fee_year' => date("Y"),
@@ -968,10 +1010,11 @@ class Fees extends Admin_Controller
 
                         $success = $this->fees_model->fee_voucher($fee_voucher);
                         if($success){
+
                             foreach ($fee_month as $k => $v) {
                                 $this->db->insert('fee_voucher_months', array(
                                     'fee_voucher_id' => $success,
-                                    'student_id' => $value,
+                                    'student_id' => $students,
                                     'fee_month' => $v,
                                     'fee_year' => date("Y"),
                                 ));
@@ -981,50 +1024,15 @@ class Fees extends Admin_Controller
                             $this->db->set('value', 'value+1', false);
                             $this->db->update('options');
                         }
+                    }else{
+                    set_alert('error', translate('voucher_is_already_created'));
+                    $array = array('status' => 'success', 'url' => base_url('fees/create_voucher'));
                     }
-                    
-                    
                 }
-                set_alert('success', translate('information_has_been_saved_successfully'));
-               
             }else{
 
-                $check = check_added_voucher_month($students,$fee_month);
-
-                if($check){
-                    $fee_voucher = array(
-                        'voucher_no' => voucher_no(),
-                        'voucher_barcode' => uniqid(),
-                        'student_id' => $students,
-                        'carry_balance' => $carry_balance,
-                        'fee_month' => serialize($fee_month),
-                        'fee_year' => date("Y"),
-                        'fee_instruction' => $fee_instruction,
-                        'session_id' => get_session_id(),
-                        'due_date' => $due_date,
-                        'valid_date' => $valid_date,
-                    );
-
-                    $success = $this->fees_model->fee_voucher($fee_voucher);
-                    if($success){
-
-                        foreach ($fee_month as $k => $v) {
-                            $this->db->insert('fee_voucher_months', array(
-                                'fee_voucher_id' => $success,
-                                'student_id' => $students,
-                                'fee_month' => $v,
-                                'fee_year' => date("Y"),
-                            ));
-                        }
-                    // Update next invoice number in settings
-                        $this->db->where('name', 'next_voucher_number');
-                        $this->db->set('value', 'value+1', false);
-                        $this->db->update('options');
-                    }
-                }else{
-                    set_alert('error', translate('voucher_is_already_created'));
-                $array = array('status' => 'success', 'url' => base_url('fees/create_voucher'));
-                }
+                $error_msg = '<div class="alert alert-danger"><strong>Danger!</strong> '.translate('please_select_consecutive_months').'</div>';
+                $array = array('status' => 'warning', 'div_name' => '.error-msg-div', 'msg' => $error_msg);
             }
 
             if(isset($success)){

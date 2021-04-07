@@ -1,32 +1,8 @@
-
-
 <?php
-
-
-
-
-
-
-
-
-
 $this->db->where_in('relid', array(1,2));
-
 $this->db->where_in('field_id', array(2,3));
-
 $this->db->delete('custom_fields_values');
-
-
-
-
-
 ?>
-
-
-
-
-
-
 
 <?php $widget = (is_superadmin_loggedin() ? 3 : 4); ?>
 

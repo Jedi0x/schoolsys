@@ -465,8 +465,6 @@ $previous_details = json_decode($student['previous_details'], true);
 									<tr class="text-dark">
 										<th>#</th>
 										<th><?=translate("fees_type")?></th>
-										<th><?=translate("due_date")?></th>
-										<th><?=translate("status")?></th>
 										<th><?=translate("amount")?></th>
 										<th><?=translate("discount")?></th>
 										<th><?=translate("remarks")?></th>
@@ -477,6 +475,7 @@ $previous_details = json_decode($student['previous_details'], true);
 								</thead>
 								<tbody>
 									<?php
+										// JR code here
 										$count = 1;
 										$total_fine = 0;
 										$total_discount = 0;
@@ -489,12 +488,8 @@ $previous_details = json_decode($student['previous_details'], true);
 											$type_discount = $deposit['total_discount'];
 											$type_fine = $deposit['total_fine'];
 											$type_amount = $deposit['total_amount'];
-											$balance = $fee['amount'] - ($type_amount + $type_discount);
-											$total_discount += $type_discount;
-											$total_fine += $type_fine;
-											$total_paid += $type_amount;
-											$total_balance += $balance;
-											$total_amount += $fee['amount'];
+											
+											
 
 											$discount_info = get_fee_type_discount($student['id'],$fee['fee_type_id']);
 
@@ -513,30 +508,22 @@ $previous_details = json_decode($student['previous_details'], true);
 												}
 											}
 
+											$balance = $fee['amount'] - $discount_added;
+
+											$total_discount += $type_discount;
+											$total_fine += $type_fine;
+											$total_paid += $type_amount;
+											$total_balance += $balance;
+											$total_amount += $fee['amount'];
+
 											
 										?>
 									<tr>
 										<td><?php echo $count++;?></td>
 										<td><?=$fee['name']?></td>
-										<td><?=_d($fee['due_date'])?></td>
-										<td><?php 
-											$status = 0;
-											$labelmode = '';
-											if($type_amount == 0) {
-												$status = translate('unpaid');
-												$labelmode = 'label-danger-custom';
-											} elseif($balance == 0) {
-												$status = translate('total_paid');
-												$labelmode = 'label-success-custom';
-											} else {
-												$status = translate('partly_paid');
-												$labelmode = 'label-info-custom';
-											}
-											echo "<span class='label ".$labelmode." '>".$status."</span>";
-										?></td>
 										<td><?php echo $currency_symbol . $fee['amount'];?></td>
 										<td><p data-html="true" title="Discount" data-toggle="popover"  data-content='<?php echo form_open("student/discount", array("class" => "form-horizontal frm-submit-discount" )); ?>
-											<input type="number" required name="discount" min="0" class="form-control" value="<?php echo $discount_added;?>">
+											<input type="number" required name="discount" min="0" class="form-control" placeholder="0.00" value="<?=( isset($discount_info) && ($discount_info->discount != 0) ) ? $discount_info->discount: ''; ?>">
 											<input type="hidden" name="fee_type_id" value="<?=$fee['fee_type_id']?>">
 											<input type="hidden" name="student_id" value="<?php echo $student['id']; ?>" >
 											<input type="hidden" name="add_discount" value="1">
@@ -551,7 +538,7 @@ $previous_details = json_decode($student['previous_details'], true);
 										</td>
 										<td>
 											<p data-html="true" title="Discount Remarks" data-toggle="popover"  data-content='<?php echo form_open("student/discount", array("class" => "form-horizontal frm-submit-discount" )); ?>
-											<textarea class="form-control" required rows="4" name="comment" placeholder="Enter your Remarks"><?=$discount_remarks?></textarea>
+											<textarea class="form-control" required rows="4" name="comment" placeholder="Enter your Remarks"><?=( isset($discount_info) && ($discount_info->remarks != '') ) ? $discount_info->remarks: ''; ?></textarea>
 											<input type="hidden" name="fee_type_id" value="<?=$fee['fee_type_id']?>">
 											<input type="hidden" name="student_id" value="<?php echo $student['id']; ?>" >
 											<input type="hidden" name="discount_comment" value="1">
@@ -572,8 +559,7 @@ $previous_details = json_decode($student['previous_details'], true);
 								</tbody>
 								<tfoot>
 									<tr class="text-dark">
-										<th></th>
-										<th></th>
+									
 										<th></th>
 										<th></th>
 

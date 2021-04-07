@@ -636,5 +636,36 @@ function previous_balance($student_id)
     }
 }
 
+function voucher_month_validation($months)
+{   
+    $size = sizeof($months);
+    if($size > 1){
+        foreach ($months as $k => $month) {
+            if(isset($months[$k+1])){
+                if($months[$k+1] == ($month+1)){
+                    return true;
+                }else{
+                    return false;
+                }
+            }
+        } 
+    }else{
+        return true;
+    } 
+}
+
+function check_student_fee($student_id)
+{
+    $CI = & get_instance();
+    $CI->db->select("*");
+    $CI->db->where('student_id',$student_id);
+    $voucher = $CI->db->get('fee_voucher_payments')->row();
+    if(!empty($voucher)){
+        return true;
+    }else{
+        return false;
+    }
+}
+
 
 

@@ -313,6 +313,7 @@ if(isset($active_tab)){
         </div>
 		<?php echo form_open($this->uri->uri_string(), array('class' => 'form-horizontal frm-submit')); ?>
 			<div class="panel-body">
+			<span class="error-msg-div"></span>
 
 			<div id="create_single_voucher_hidden_feilds"></div>
 
@@ -429,7 +430,6 @@ if(isset($active_tab)){
             },
             searchPanel: {
                 visible: true,
-                width: 240,
                 placeholder: "Search..."
             },
             headerFilter: {
@@ -439,14 +439,12 @@ if(isset($active_tab)){
                 {
                     dataField: "voucher_no",
                     caption: "Voucher No",
-                    width: 140,
                     headerFilter: {
                         groupInterval: 10000
                     }
                 },{
                     dataField: "student_name",
                     caption: "Student",
-                    width: 140,
                     headerFilter: {
                         groupInterval: 10000
                     }
@@ -540,9 +538,6 @@ if(isset($active_tab)){
 <style>
     .dx-theme-generic-typography{
         overflow-y: auto;
-    }
-    .dx-widget {
-        width: 1800px;
     }
     .dx-widget tr.dx-datagrid-filter-row{
         display: none;

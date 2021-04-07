@@ -103,6 +103,8 @@
 										$total_amount = 0;
 										$typeData = array('' => translate('select'));
 
+										
+
 										// get total paid amount of this voucher
 
 										$total_paid = get_paid_amount_voucher($voucher->id);
@@ -116,20 +118,18 @@
 										}
 
 										foreach ($allocations as $row) {
+
+											$type_discount = 0;
 											$deposit = $this->fees_model->getStudentFeeDeposit($row['allocation_id'], $row['fee_type_id']);
-
-											$type_discount = $deposit['total_discount'];
-
-											$type_fine = $deposit['total_fine'];
-											$type_amount = $deposit['total_amount'];
+								
+											$check_month = check_voucher_month($voucher->id,$row['fee_type_id']);
 
 
 											$discount_info = get_fee_type_discount($student_id,$row['fee_type_id']);
 
-											$discount_added = 0;
 											if(!empty($discount_info)){
 												if(!empty($discount_info->discount)){
-													$type_discount = number_format($discount_info->discount, 2, '.', '');
+													$type_discount = number_format(($discount_info->discount*$check_month), 2, '.', '');
 													
 												}else{
 													$total_discount += 0;
@@ -145,20 +145,16 @@
 												$type_fine =  number_format($fine, 2, '.', '');
 											}
 
-											$balance = ($row['amount'] - $type_discount) + $type_fine;
+											//$balance = ($row['amount']*$check_month) + $type_fine;
 
-											// check voucher months
+											$balance = ($row['amount']*$check_month - $type_discount) + $type_fine;
 
-											$check_month = check_voucher_month($voucher->id,$row['fee_type_id']);
 
-											$balance = $balance*$check_month;
-
+											
 											$total_discount += $type_discount;
 											$total_fine += $type_fine;
 
-											//$total_paid += $type_amount;
-
-
+					
 											$total_balance += $balance;
 											$total_amount += $row['amount']*$check_month;
 

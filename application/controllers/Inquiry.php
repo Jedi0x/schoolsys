@@ -324,8 +324,7 @@ class Inquiry extends Admin_Controller {
             $this->data['inquiries'] = $inquiries = $this->application_model->getInquiries($classID, $sectionID, $branchID, false, true);
         }
 
-        debug($this->data['inquiries'],true);
-        
+
         $this->data['branch_id'] = $branchID;
         $this->data['title'] = translate('inquiry_list');
         $this->data['main_menu'] = 'inquiry';

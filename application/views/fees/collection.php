@@ -65,7 +65,7 @@
 					<div class="col-md-4 mb-sm">
 						<div class="form-group">
 							<label class="control-label"><?=translate('voucher_bar_code')?></label>
-							<input type="text" class="form-control" name="voucher_bar_code" value="<?=set_value('voucher_bar_code')?>" />
+							<input type="text" autofocus class="form-control" name="voucher_bar_code" value="<?=set_value('voucher_bar_code')?>" />
 
 						</div>
 					</div>
@@ -105,7 +105,6 @@
 								<th><?=translate('register_no')?></th>
 								<th><?=translate('roll')?></th>
 								<th><?=translate('mobile_no')?></th>
-								<th><?=translate('fee_group')?></th>
 								<th><?=translate('fee_month')?></th>
 								<th><?=translate('status')?></th>
 								<th><?=translate('action')?></th>
@@ -126,10 +125,7 @@
 								<td><?php echo $row['register_no'];?></td>
 								<td><?php echo $row['roll'];?></td>
 								<td><?php echo $row['mobileno'];?></td>
-								<td><?php 
-								foreach ($row['feegroup'] as $key => $value) {
-									echo "- " . $value['name'] . "<br>";
-								} ?></td>
+								
 								<td><?=get_voucher_month($row['fee_month'])?></td>
 								<td>
 									<?php
