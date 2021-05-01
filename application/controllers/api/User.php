@@ -3,7 +3,10 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 require APPPATH . '/libraries/REST_Controller.php';
+require APPPATH. '/libraries/SignatureInvalidException.php';
 require APPPATH . '/libraries/JWT.php';
+require APPPATH. '/libraries/BeforeValidException.php';
+require APPPATH. '/libraries/ExpiredException.php';
 
 use Restserver\Libraries\REST_Controller;
 use \Firebase\JWT\JWT;
@@ -15,541 +18,559 @@ class User extends REST_Controller {
         // Construct the parent class
         parent::__construct();
 
-        // Configure limits on our controller methods
-        // Ensure you have created the 'limits' table and enabled 'limits' within application/config/rest.php
         $this->methods['user_get']['limit'] = 500000; // 500 requests per hour per user/key
         $this->methods['user_post']['limit'] = 100000; // 100 requests per hour per user/key
         $this->methods['user_delete']['limit'] = 50; // 50 requests per hour per user/key
-        $this->load->model(array(''));
+        $this->load->helper('api');
 
-        $this->load->helpers('download');
-        $this->load->helpers('custom_fields');
-        $this->load->model('student_model');
-        $this->load->model('email_model');
-        $this->load->model('sms_model');
-        $this->load->model('parents_model');
-        $this->load->model('userrole_model');
-        $this->load->model('exam_model');
 
-        $this->load->model('leave_model');
-
-        $this->load->helper(array('url', 'form'));
     }
 
-    public function login_post() {
-        $data = new stdClass();
-        $data->email = $email = $this->post('email');
-        $data->password = $password = $this->post('password');
-        $data->level = $level = $this->post('level');
+    public function leave_post() 
+    {
 
-        if (!$email) {
-            $invalidLogin = ['invalid' => 'Please enter email. It\'s required.'];
-            $this->response($invalidLogin, REST_Controller::HTTP_NOT_FOUND);
-        }
-        if (!$password) {
-            $invalidLogin = ['invalid' => 'Please enter password. It\'s required.'];
-            $this->response($invalidLogin, REST_Controller::HTTP_NOT_FOUND);
-        }
+        $token = $this->input->get_request_header('Authorization');
+        $token = explode(' ', $token)[1];
+        
+        try{
+            $user_data = JWT::decode($token, "user_auth",array('HS256'));
+            $leave_category = $this->input->post('leave_category');
+            $daterange = $this->input->post('daterange');
+            $reason = $this->input->post('reason');
+
+            $this->form_validation->set_rules('leave_category', 'leave_category', 'required');
+            $this->form_validation->set_rules('daterange', 'daterange', 'required');
+            $this->form_validation->set_rules('reason','reason', 'required');
+            if ($this->form_validation->run() === false) {
+                $this->response(array('status' => false, 'message' => $_POST), REST_Controller::HTTP_NOT_FOUND);
+            }else{
+
+                $daterange = explode(' - ', $daterange);
+                $start_date = date("Y-m-d", strtotime($daterange[0]));
+                $end_date = date("Y-m-d", strtotime($daterange[1]));
+                $apply_date = date("Y-m-d H:i:s");
+                $datetime1 = new DateTime($start_date);
+                $datetime2 = new DateTime($end_date);
+                $leave_days = $datetime2->diff($datetime1)->format("%a") + 1;
+                $orig_file_name = '';
+                $enc_file_name = '';
 
 
-        $this->load->model('authentication_model');
+                if (isset($_FILES["attachment_file"]) && !empty($_FILES['attachment_file']['name'])) {
+                    $config['upload_path']      = './uploads/attachments/leave/';
+                    $config['allowed_types']    = "gif|jpg|jpeg|png|pdf";
+                    $config['max_size']         = '2024';
+                    $config['encrypt_name']     = true;
+                    $this->upload->initialize($config);
+                    
+                    if($this->upload->do_upload("attachment_file")){
+                        $orig_file_name = $this->upload->data('orig_name');
+                        $enc_file_name  = $this->upload->data('file_name');
 
-
-        if (empty($invalidLogin)) {
-            $rules = array(
-                array(
-                    'field' => 'email',
-                    'label' => "Email",
-                    'rules' => 'trim|required',
-                ),
-                array(
-                    'field' => 'password',
-                    'label' => "Password",
-                    'rules' => 'trim|required',
-                ),
-            );
-            $this->form_validation->set_rules($rules);
-            if ($this->form_validation->run() !== false) {
-                $email = $this->input->post('email');
-                $password = $this->input->post('password');
-                // username is okey lets check the password now
-                $login_credential = $this->authentication_model->login_credential($email, $password);
-                if ($login_credential) {
-                    if ($login_credential->active) {
-                        if ($login_credential->role == 6) {
-                            $userType = 'parent';
-                        } elseif ($login_credential->role == 7) {
-                            $userType = 'student';
-                        } else {
-                            $userType = 'staff';
-                        }
-                        $getUser = $this->application_model->getUserNameByRoleID($login_credential->role, $login_credential->user_id);
-                        $getConfig = $this->db->get_where('global_settings', array('id' => 1))->row_array();
-                        // get logger name
-                        $token = array(
-                            'name' => $getUser['name'],
-                            'logger_photo' => $getUser['photo'],
-                            'loggedin_branch' => $getUser['branch_id'],
-                            'loggedin_id' => $login_credential->id,
-                            'loggedin_userid' => $login_credential->user_id,
-                            'loggedin_role_id' => $login_credential->role,
-                            'loggedin_type' => $userType,
-                            'set_lang' => $getConfig['translation'],
-                            'set_session_id' => $getConfig['session_id'],
-                            'loggedin' => true,
+                        $leaveData = array(
+                            'user_id'           => $user_data->loggedin_userid,
+                            'role_id'           => $user_data->loggedin_role_id,
+                            'session_id'        => $user_data->set_session_id,
+                            'category_id'       => $leave_category,
+                            'reason'            => $reason,
+                            'branch_id'         => $user_data->loggedin_branch,
+                            'start_date'        => date("Y-m-d", strtotime($start_date)),
+                            'end_date'          => date("Y-m-d", strtotime($end_date)),
+                            'leave_days'        => $leave_days,
+                            'status'            => 1,
+                            'orig_file_name'    => $orig_file_name,
+                            'enc_file_name'     => $enc_file_name,
+                            'apply_date'        => $apply_date,
                         );
+                        $res = $this->db->insert('leave_application', $leaveData);
+                        if($res){
+                            $this->set_response(array('status' => TRUE, 'message' => translate('leave_requested_successfully')), REST_Controller::HTTP_OK);
+                        }else{
+                            $this->response(array('status' => FALSE, 'message' => translate('something_went_wrong')), REST_Controller::HTTP_NOT_FOUND);
+                        }
 
-                        $this->db->update('login_credential', array('last_login' => date('Y-m-d H:i:s')), array('id' => $login_credential->id));
+                    }else{
+                        
+                        $this->response(array('status' => false, 'message' => $this->upload->display_errors()), REST_Controller::HTTP_NOT_FOUND);
 
-                        $date = new DateTime();
-                        $token['iat'] = $date->getTimestamp();
-                        $token['exp'] = $date->getTimestamp() + 60 * 60 * 24;
-                        $id_token = JWT::encode($token, "user_auth");
-
-                        $output = ['success' => TRUE, 'id_token' => $id_token];
-                        $this->set_response($output, REST_Controller::HTTP_CREATED);
-                    } else {
-                        $invalidLogin = ['invalid' => translate('inactive_account')];
-                        $this->set_response($invalidLogin, REST_Controller::HTTP_NOT_FOUND);
                     }
-                } else {
-                    $invalidLogin = ['invalid' => translate('username_password_incorrect')];
-                    $this->set_response($invalidLogin, REST_Controller::HTTP_NOT_FOUND);
+
+                }
+
+            }
+ 
+        } catch (Exception $ex) {
+            $response = array("status" => FALSE,"message" => 'Unauthorized token');
+            $this->response($response, REST_Controller::HTTP_UNAUTHORIZED);
+        
+        }   
+    }
+
+    public function leaves_get()
+    {
+        $token = $this->input->get_request_header('Authorization');
+        $token = explode(' ', $token)[1];
+        
+        try{
+            $user_data = JWT::decode($token, "user_auth",array('HS256'));
+
+            $user_id = $this->get('userID');
+            $user_role = $this->get('userRole');
+
+            $this->db->select('la.*,c.name as category_name,r.name as role');
+            $this->db->from('leave_application as la');
+            $this->db->join('leave_category as c', 'c.id = la.category_id', 'left');
+            $this->db->join('roles as r', 'r.id = la.role_id', 'left');
+            $this->db->where('la.user_id', $user_id);
+            $this->db->where('la.role_id', $user_role);
+            $leaves =  $this->db->get()->result();
+
+            if(!empty($leaves)){
+
+                $this->set_response(array('status' => TRUE, 'leaves' => $leaves), REST_Controller::HTTP_OK);
+            }else{
+                $this->response(array('status' => FALSE, 'message' => translate('no_record_found')), REST_Controller::HTTP_NOT_FOUND);
+            }
+
+        } catch (Exception $ex) {
+            $response = array("status" => FALSE,"message" => 'Unauthorized token');
+            $this->response($response, REST_Controller::HTTP_UNAUTHORIZED);
+
+        }
+    }
+
+    public function events_get()
+    {
+        $token = $this->input->get_request_header('Authorization');
+        $token = explode(' ', $token)[1];
+        
+        try{
+            $user_data = JWT::decode($token, "user_auth",array('HS256'));
+
+
+            $this->db->where('branch_id', $user_data->loggedin_branch);       
+            $this->db->order_by('id', 'desc');
+            $events = $this->db->get('event')->result();
+
+            if(!empty($events)){
+                foreach ($events as $key => $event) {
+                    $event->image_path = base_url('uploads/frontend/events/'.$event->image);
+                }
+                $this->set_response(array('status' => TRUE, 'events' => $events), REST_Controller::HTTP_OK);
+            }else{
+                $this->response(array('status' => FALSE, 'message' => translate('no_record_found')), REST_Controller::HTTP_NOT_FOUND);
+            }
+
+        } catch (Exception $ex) {
+            $response = array("status" => FALSE,"message" => 'Unauthorized token');
+            $this->response($response, REST_Controller::HTTP_UNAUTHORIZED);
+        
+        }
+    }
+
+    public function examSchedule_get()
+    {
+        $token = $this->input->get_request_header('Authorization');
+        $token = explode(' ', $token)[1];
+        
+        try{
+            $user_data = JWT::decode($token, "user_auth",array('HS256'));
+
+            $classID = $this->get('classID');
+            $sectionID = $this->get('sectionID');
+
+            if(empty($classID)){
+                $this->response(array('status' => FALSE, 'message' => translate('please_add_class_id')), REST_Controller::HTTP_NOT_FOUND);
+            }else if(empty($sectionID)){
+                $this->response(array('status' => FALSE, 'message' => translate('please_add_section_id')), REST_Controller::HTTP_NOT_FOUND);
+            }else {
+
+                $this->db->select('t.*,b.name as branch_name');
+                $this->db->from('timetable_exam as t');
+                $this->db->join('branch as b', 'b.id = t.branch_id', 'left');
+                $this->db->where('t.class_id', $classID);
+                $this->db->where('t.section_id', $sectionID);
+                $this->db->order_by('t.id', 'asc');
+                $this->db->group_by('t.exam_id');
+                $exams =  $this->db->get()->result();
+
+                if(!empty($exams)){
+
+                    foreach ($exams as $e => $exam) {
+                        $mark_distribution = json_decode($exam->mark_distribution, true);
+                        $mark_distribution = array_values($mark_distribution);
+
+                        $exam->full_mark = $mark_distribution[0]['full_mark'];
+                        $exam->pass_mark = $mark_distribution[0]['pass_mark'];
+
+                        $exam->exam_name = exam_name_by_id($exam->exam_id);
+                        $exam->class_name = class_name_by_id($exam->class_id);
+                        $exam->section_name = section_name_by_id($exam->section_id);
+                        $exam->hall_name = hall_name_by_id($exam->hall_id);
+                        unset($exam->mark_distribution);
+                    }
+
+
+                    $this->set_response(array('status' => TRUE, 'exams' => $exams), REST_Controller::HTTP_OK);
+                }else{
+                    $this->response(array('status' => FALSE, 'message' => translate('no_record_found')), REST_Controller::HTTP_NOT_FOUND);
                 }
             }
+
+
+
+        } catch (Exception $ex) {
+            $response = array("status" => FALSE,"message" => 'Unauthorized token');
+            $this->response($response, REST_Controller::HTTP_UNAUTHORIZED);
+        
         }
     }
 
-    public function verify_post() {
-        $headers = $this->input->request_headers();
-//        $jwt = $headers['Authorization'];
-//        $jwt = $this->get('Authorization');
-        $jwt = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJuYW1lIjoiYWRtaW4iLCJsb2dnZXJfcGhvdG8iOm51bGwsImxvZ2dlZGluX2JyYW5jaCI6bnVsbCwibG9nZ2VkaW5faWQiOiIxIiwibG9nZ2VkaW5fdXNlcmlkIjoiMSIsImxvZ2dlZGluX3JvbGVfaWQiOiIxIiwibG9nZ2VkaW5fdHlwZSI6InN0YWZmIiwic2V0X2xhbmciOiJlbmdsaXNoIiwic2V0X3Nlc3Npb25faWQiOiIzIiwibG9nZ2VkaW4iOnRydWUsImlhdCI6MTYxMzU5NDY3NCwiZXhwIjoxNjEzNjgxMDc0fQ.kPamyPSOvLasRADSKydPnbEIKIsFZzHgt3gqdQEgrtc';
+    public function examScheduleDetails_get()
+    {
+        $token = $this->input->get_request_header('Authorization');
+        $token = explode(' ', $token)[1];
+        
+        try{
+            $user_data = JWT::decode($token, "user_auth",array('HS256'));
 
-        $output['id_token'] = JWT::decode($jwt, "user_auth", array('HS256'));
-        $this->set_response($output, REST_Controller::HTTP_CREATED);
-    }
-
-    public function index_get() {
-        $this->set_response('Hello World', REST_Controller::HTTP_OK);
-    }
-
-    public function view_get() {
-
-        $headers = $this->input->request_headers();
-
-//        $branchID = $headers['branchID'];
-//        $classID = $headers['classID'];
-//        $sectionID = $headers['sectionID'];
-
-        $branchID = $this->get('branchID');
-        $classID = $this->get('classID');
-        $sectionID = $this->get('sectionID');
+            $user_id = $this->get('userID'); 
+            $classID = $this->get('classID');
+            $sectionID = $this->get('sectionID');
+            $examID = $this->get('examID');
 
 
-        $this->data['students'] = $this->application_model->getStudentListByClassSection($classID, $sectionID, $branchID, false, true);
-        if (isset($this->data['students']) && !empty($this->data['students'])) {
-            $this->data['title'] = translate('student_list');
-            $this->data['status'] = TRUE;
-            $this->data['message'] = count($this->data['students']) . ' ' . translate('record_found.');
+            if(empty($user_id)){
+                $this->response(array('status' => FALSE, 'message' => translate('user_id_is_missing.')), REST_Controller::HTTP_NOT_FOUND);
 
-            $this->set_response($this->data, REST_Controller::HTTP_OK);
-        } else {
-            $this->data['title'] = translate('student_list');
-            $this->data['status'] = FALSE;
-            $this->data['message'] = translate('No_record_found.');
-            // Set the response and exit
-            $this->response($this->data, REST_Controller::HTTP_NOT_FOUND); // NOT_FOUND (404) being the HTTP response code
+            }else if(empty($classID)){
+                $this->response(array('status' => FALSE, 'message' => translate('class_id_is_missing.')), REST_Controller::HTTP_NOT_FOUND);
+            }else if(empty($sectionID)){
+                $this->response(array('status' => FALSE, 'message' => translate('section_id_is_missing.')), REST_Controller::HTTP_NOT_FOUND);
+            }else if(empty($examID)){
+                $this->response(array('status' => FALSE, 'message' => translate('exam_id_is_missing.')), REST_Controller::HTTP_NOT_FOUND);
+            }else{
+
+                $this->db->select('t.*,s.name as subject_name,eh.hall_no,m.mark as obtain_marks');
+                $this->db->from('timetable_exam as t');
+                $this->db->join('subject as s', 's.id = t.subject_id', 'left');
+                $this->db->join('mark as m', 'm.subject_id = t.subject_id', 'left');
+                $this->db->join('exam_hall as eh', 'eh.id = t.hall_id', 'left');
+                $this->db->where('t.exam_id', $examID);
+                $this->db->where('t.class_id', $classID);
+                $this->db->where('t.section_id', $sectionID);
+                $this->db->where('m.student_id', $user_id);
+                $exam_details =  $this->db->get()->result();
+
+                $response =  array();
+                $output = array();
+                $total_obtain_marks = 0;
+                $total_full_marks = 0;
+
+                if(!empty($exam_details)){
+
+                    foreach ($exam_details as $e => $exam) {
+                        $mark_distribution = json_decode($exam->mark_distribution, true);
+                        $obtainedMark = json_decode($exam->obtain_marks, true);
+
+                        $mark_distribution = array_values($mark_distribution);
+                        $obtainedMark = array_values($obtainedMark);
+
+                        $response[$e]['full_mark'] = $mark_distribution[0]['full_mark'];
+                        $response[$e]['pass_mark'] = $mark_distribution[0]['pass_mark'];
+                        $response[$e]['obtain_mark'] = $obtainedMark[0];
+                        $response[$e]['exam_name'] = exam_name_by_id($exam->exam_id);
+                        $response[$e]['class_name'] = class_name_by_id($exam->class_id);
+                        $response[$e]['section_name'] = section_name_by_id($exam->section_id);
+                        $response[$e]['subject_name'] = $exam->subject_name;
+                        $response[$e]['hall_no'] = $exam->hall_no;
+                        $response[$e]['time_start'] = $exam->time_start;
+                        $response[$e]['time_end'] = $exam->time_end;
+                        $total_obtain_marks+=$response[$e]['obtain_mark'];
+                        $total_full_marks+=$response[$e]['full_mark'];
+
+                    }
+                    $percentage = ($total_obtain_marks * 100) / $total_full_marks;
+                    $avg = number_format($percentage, 2, '.', '') . '%';
+
+                    $output = array(
+                        'exams_details' => $response,
+                        'grand_full_marks' => $total_full_marks,
+                        'grand_obtain_marks' => $total_obtain_marks,
+                        'avg' => $avg
+                    );
+
+
+                    $this->set_response(array('status' => TRUE, 'exams' => $output), REST_Controller::HTTP_OK);
+                }else{
+                    $this->response(array('status' => FALSE, 'message' => translate('no_record_found')), REST_Controller::HTTP_NOT_FOUND);
+                }
+            }
+
+        } catch (Exception $ex) {
+            $response = array("status" => FALSE,"message" => 'Unauthorized token');
+            $this->response($response, REST_Controller::HTTP_UNAUTHORIZED);
+        
         }
     }
+
+
+    public function homework_get()
+    {
+        $token = $this->input->get_request_header('Authorization');
+        $token = explode(' ', $token)[1];
+        
+        try{
+            $user_data = JWT::decode($token, "user_auth",array('HS256'));
+
+            $user_id = $this->get('userID');
+
+            if(empty($user_id)){
+                $this->response(array('status' => FALSE, 'message' => translate('user_id_is_missing.')), REST_Controller::HTTP_NOT_FOUND);
+            }else{
+
+                $user_details = get_user_enroll($user_id);
+
+                $classID = $user_details['class_id'];
+                $sectionID = $user_details['section_id'];
+
+
+                $this->db->select('homework.*,subject.name as subject_name,class.name as class_name,section.name as section_name,staff.name as creator_name');
+                $this->db->from('homework');
+                $this->db->join('subject', 'subject.id = homework.subject_id', 'left');
+                $this->db->join('class', 'class.id = homework.class_id', 'left');
+                $this->db->join('section', 'section.id = homework.section_id', 'left');
+                $this->db->join('staff', 'staff.id = homework.created_by', 'left');
+                $this->db->where('homework.class_id', $classID);
+                $this->db->where('homework.section_id', $sectionID);
+                $this->db->order_by('homework.id', 'desc');
+                $homeworks = $this->db->get()->result();
+
+                if(!empty($homeworks)){
+
+                    foreach ($homeworks as $e => $homework) {
+                        $name     = get_type_name_by_id('homework', $homework->id, 'document');
+                        $ext      = explode(".", $name);
+                        $homework->document_path = base_url('uploads/attachments/homework/'.$homework->id. '.' . $ext[1]);
+                    }
+
+
+                    $this->set_response(array('status' => TRUE, 'homework' => $homeworks), REST_Controller::HTTP_OK);
+                }else{
+                    $this->response(array('status' => FALSE, 'message' => translate('no_record_found')), REST_Controller::HTTP_NOT_FOUND);
+                }
+            }
+
+        } catch (Exception $ex) {
+            $response = array("status" => FALSE,"message" => 'Unauthorized token');
+            $this->response($response, REST_Controller::HTTP_UNAUTHORIZED);
+
+        }
+    }
+
+
+    public function attendance_get()
+    {
+        $token = $this->input->get_request_header('Authorization');
+        $token = explode(' ', $token)[1];
+        
+        try{
+            $user_data = JWT::decode($token, "user_auth",array('HS256'));
+
+            $user_id = $this->get('userID');
+            $timestamp = $this->get('timestamp');
+
+            if(empty($user_id)){
+                $this->response(array('status' => FALSE, 'message' => translate('user_id_is_missing.')), REST_Controller::HTTP_NOT_FOUND);
+            }else if (empty($timestamp)) {
+                $this->response(array('status' => FALSE, 'message' => translate('timestamp_is_missing..')), REST_Controller::HTTP_NOT_FOUND);
+            }
+            else{
+
+                $total_present = 0;
+                $total_absent = 0;
+                $total_late = 0;
+                $total_hospital = 0;
+                $response = array();
+
+                $response['month'] = $month = date('m', strtotime($this->get('timestamp')));
+                $response['year'] = $year = date('Y', strtotime($this->get('timestamp')));
+                $response['days'] = $days = cal_days_in_month(CAL_GREGORIAN, $response['month'], $response['year']);
+
+                for ($i = 1; $i <= $days; $i++) {
+                    $attendance = new stdClass();
+                    $date = date('Y-m-d', strtotime($year . '-' . $month . '-' . $i));
+
+                    $this->db->select('*');
+                    $this->db->from('student_attendance');
+                    $this->db->where('student_id', 6);
+                    $this->db->where('date', $date);
+                    $atten =  $this->db->get()->row_array();
+
+                    if ($atten['status'] == 'A') {
+                        $total_absent++;
+                    } else if ($atten['status'] == 'P') {
+                        $total_present++;
+                    } else if ($atten['status'] == 'L') {
+                        $total_late++;
+                    } else if ($atten['status'] == 'H') {
+                        $total_hospital++;
+                    }
+
+                    if ($atten['status'] == '') {
+                        $attendance->status = '-';
+                    } else {
+                        $attendance->status = $atten['status'];
+                    }
+
+                    $attendance->remark = "{$atten['remark']}";
+                    $adate = $atten['date'];
+                    $cdate = $atten['created_at'];
+                    $time = new DateTime($cdate);
+                    $date = $time->format('d-m-Y');
+                    $time = $time->format('H:i');
+
+                    $attendance->attendance_date = "{$adate}";
+                    $attendance->creation_date = "{$date}";
+                    $attendance->creation_time = "{$time}";
+
+                    $response['attendance'][] = $attendance;
+                }
+
+
+                $response['total_absent'] = $total_absent;
+                $response['total_present'] = $total_present;
+                $response['total_late'] = $total_late;
+                $response['total_hospital'] = $total_hospital;
+
+                $this->set_response(array('status' => TRUE, 'attendance' => $response), REST_Controller::HTTP_OK);
+            }
+            
+
+        } catch (Exception $ex) {
+            $response = array("status" => FALSE,"message" => 'Unauthorized token');
+            $this->response($response, REST_Controller::HTTP_UNAUTHORIZED);
+        
+        }
+    }
+
+    public function studentprofile_get()
+    {
+        $token = $this->input->get_request_header('Authorization');
+        $token = explode(' ', $token)[1];
+        
+        try{
+            $user_data = JWT::decode($token, "user_auth",array('HS256'));
+
+            $user_id = $this->get('student_id');
+
+            if(empty($user_id)){
+                $this->response(array('status' => FALSE, 'message' => translate('student_id_is_missing.')), REST_Controller::HTTP_NOT_FOUND);
+            }else{
+
+                $this->db->select('s.*,l.username,l.active,e.class_id,e.section_id,e.id as enrollid,e.roll,e.branch_id,e.session_id,c.name as class_name,se.name as section_name,sc.name as category_name');
+                $this->db->from('enroll as e');
+                $this->db->join('student as s', 'e.student_id = s.id', 'left');
+                $this->db->join('login_credential as l', 'l.user_id = s.id and l.role = 7', 'inner');
+                $this->db->join('class as c', 'e.class_id = c.id', 'left');
+                $this->db->join('section as se', 'e.section_id = se.id', 'left');
+                $this->db->join('student_category as sc', 's.category_id=sc.id', 'left');
+                $this->db->where('s.id', $user_id);
+                $student =  $this->db->get()->result();
+
+                if(!empty($student)){
+                    $this->set_response(array('status' => TRUE, 'student' => $student), REST_Controller::HTTP_OK);
+                }else{
+                    $this->response(array('status' => FALSE, 'message' => translate('no_record_found')), REST_Controller::HTTP_NOT_FOUND);
+                }
+            }
+
+        } catch (Exception $ex) {
+            $response = array("status" => FALSE,"message" => 'Unauthorized token');
+            $this->response($response, REST_Controller::HTTP_UNAUTHORIZED);
+        
+        }
+    }
+
 
     public function parentprofile_get() {
-        $headers = $this->input->request_headers();
-//        $id = $headers['id'];
-        $id = $this->get('id');
-        $this->data['parent_id'] = $id;
-        $this->data['parent'] = $this->parents_model->getSingleParent($id);
+       $token = $this->input->get_request_header('Authorization');
+        $token = explode(' ', $token)[1];
+        
+        try{
+            $user_data = JWT::decode($token, "user_auth",array('HS256'));
 
-        $this->data['childs'] = $this->parents_model->childsResult($id);
+            $id = $this->get('id');
 
-        $this->data['title'] = translate('parents_profile');
-        $this->set_response($this->data, REST_Controller::HTTP_OK);
-    }
+            if(empty($id)){
+                $this->response(array('status' => FALSE, 'message' => translate('id_is_missing.')), REST_Controller::HTTP_NOT_FOUND);
+            }else{
 
-    public function studentprofile_get() {
-        $this->load->model('fees_model');
-        $this->load->model('exam_model');
-
-        $this->data['title'] = translate('student_profile');
-
-        $headers = $this->input->request_headers();
-//        $id = $headers['id'];
-
-        $id = $this->get('id');
-
-        $getStudent = $this->student_model->getSingleStudent($id);
-        $this->data['student'] = $getStudent;
-        $this->data['parent_detail'] = $this->student_model->get('parent', array('id' => $id), true);
-        $this->data['previous_details'] = json_decode($getStudent['previous_details'], true);
-//        $this->data['allocations'] = $this->fees_model->getInvoiceDetails($id);
+                $this->db->select('parent.*,login_credential.role as role_id,login_credential.active,login_credential.username,login_credential.id as login_id, roles.name as role');
+                $this->db->from('parent');
+                $this->db->join('login_credential', 'login_credential.user_id = parent.id and login_credential.role = "6"', 'inner');
+                $this->db->join('roles', 'roles.id = login_credential.role', 'left');
+                $this->db->where('parent.id', $id);
+                $response['parent'] = $this->db->get()->result();
 
 
+                $this->db->select('s.id,s.photo, CONCAT(s.first_name, " ", s.last_name) as fullname,c.name as class_name,se.name as section_name');
+                $this->db->from('enroll as e');
+                $this->db->join('student as s', 'e.student_id = s.id', 'inner');
+                $this->db->join('login_credential as l', 'l.user_id = s.id and l.role = 7', 'inner');
+                $this->db->join('class as c', 'e.class_id = c.id', 'left');
+                $this->db->join('section as se', 'e.section_id=se.id', 'left');
+                $this->db->where('s.parent_id', $id);
+                $this->db->where('l.active', 1);
+                $response['childs'] = $this->db->get()->result();
 
-
-        $count = 1;
-        $total_fine = 0;
-        $total_discount = 0;
-        $total_paid = 0;
-        $total_balance = 0;
-        $total_amount = 0;
-        $allocations = $this->fees_model->getInvoiceDetails($id);
-        foreach ($allocations as $fkey => $fee) {
-            $deposit = $this->fees_model->getStudentFeeDeposit($fee['allocation_id'], $fee['fee_type_id']);
-            $type_discount = $deposit['total_discount'];
-            $type_fine = $deposit['total_fine'];
-            $type_amount = $deposit['total_amount'];
-            $balance = $fee['amount'] - ($type_amount + $type_discount);
-            $total_discount += $type_discount;
-            $total_fine += $type_fine;
-            $total_paid += $type_amount;
-            $total_balance += $balance;
-            $total_amount += $fee['amount'];
-
-            $this->data['allocations'][$fkey]['name'] = $fee['name'];
-            $this->data['allocations'][$fkey]['due_date'] = _d($fee['due_date']);
-
-            $status = 0;
-            $labelmode = '';
-            if ($type_amount == 0) {
-                $status = translate('unpaid');
-                $labelmode = 'label-danger-custom';
-            } elseif ($balance == 0) {
-                $status = translate('total_paid');
-                $labelmode = 'label-success-custom';
-            } else {
-                $status = translate('partly_paid');
-                $labelmode = 'label-info-custom';
+                $this->set_response(array('status' => TRUE, 'profile' => $response), REST_Controller::HTTP_OK);
             }
-            $this->data['allocations'][$fkey]['due_date'] = $status;
-
-            $currency_symbol = $global_config['currency_symbol'];
-            $this->data['allocations'][$fkey]['amount'] = $currency_symbol . $fee['amount'];
-            $this->data['allocations'][$fkey]['type_discount'] = $currency_symbol . $type_discount;
-            $this->data['allocations'][$fkey]['type_fine'] = $currency_symbol . $type_fine;
-            $this->data['allocations'][$fkey]['type_amount'] = $currency_symbol . $type_amount;
-            $this->data['allocations'][$fkey]['balance'] = $currency_symbol . number_format($balance, 2, '.', '');
+            
+        } catch (Exception $ex) {
+            $response = array("status" => FALSE,"message" => 'Unauthorized token');
+            $this->response($response, REST_Controller::HTTP_UNAUTHORIZED);
+        
         }
-
-        $this->db->order_by('id', 'desc');
-        $this->db->where(array('role_id' => 7, 'user_id' => $id));
-        $this->data['book_result'] = $this->db->get('book_issues')->result_array();
-
-        $this->db->where('student_id', $student['id']);
-        $this->data['documents'] = $this->db->get('student_documents')->result();
-
-        $this->set_response($this->data, REST_Controller::HTTP_OK);
+       
     }
 
-    public function studentfee_get() {
-        $this->load->model('fees_model');
+    public function allStudents_get() {
+       $token = $this->input->get_request_header('Authorization');
+        $token = explode(' ', $token)[1];
+        
+        try{
+            $user_data = JWT::decode($token, "user_auth",array('HS256'));
 
-        $this->data['title'] = translate('student_fee');
+            $branchID = $this->get('branchID');
+            $classID = $this->get('classID');
 
-        $headers = $this->input->request_headers();
-//        $id = $headers['id'];
-
-        $id = $this->get('id');
-
-        $count = 1;
-        $total_fine = 0;
-        $total_discount = 0;
-        $total_paid = 0;
-        $total_balance = 0;
-        $total_amount = 0;
-        $allocations = $this->fees_model->getInvoiceDetails($id);
-        foreach ($allocations as $fkey => $fee) {
-            $deposit = $this->fees_model->getStudentFeeDeposit($fee['allocation_id'], $fee['fee_type_id']);
-            $type_discount = $deposit['total_discount'];
-            $type_fine = $deposit['total_fine'];
-            $type_amount = $deposit['total_amount'];
-            $balance = $fee['amount'] - ($type_amount + $type_discount);
-            $total_discount += $type_discount;
-            $total_fine += $type_fine;
-            $total_paid += $type_amount;
-            $total_balance += $balance;
-            $total_amount += $fee['amount'];
-
-            $this->data['fee_detail'][$fkey]['name'] = $fee['name'];
-            $this->data['fee_detail'][$fkey]['due_date'] = _d($fee['due_date']);
-
-            $status = 0;
-            $labelmode = '';
-            if ($type_amount == 0) {
-                $status = translate('unpaid');
-                $labelmode = 'label-danger-custom';
-            } elseif ($balance == 0) {
-                $status = translate('total_paid');
-                $labelmode = 'label-success-custom';
-            } else {
-                $status = translate('partly_paid');
-                $labelmode = 'label-info-custom';
-            }
-            $this->data['fee_detail'][$fkey]['due_date'] = $status;
-
-            $currency_symbol = $global_config['currency_symbol'];
-            $this->data['fee_detail'][$fkey]['amount'] = $currency_symbol . $fee['amount'];
-            $this->data['fee_detail'][$fkey]['type_discount'] = $currency_symbol . $type_discount;
-            $this->data['fee_detail'][$fkey]['type_fine'] = $currency_symbol . $type_fine;
-            $this->data['fee_detail'][$fkey]['type_amount'] = $currency_symbol . $type_amount;
-            $this->data['fee_detail'][$fkey]['balance'] = $currency_symbol . number_format($balance, 2, '.', '');
-        }
+            if(empty($branchID)){
+                $this->response(array('status' => FALSE, 'message' => translate('branch_id_is_missing.')), REST_Controller::HTTP_NOT_FOUND);
+            }else if(empty($classID)){
+                $this->response(array('status' => FALSE, 'message' => translate('class_id_is_missing.')), REST_Controller::HTTP_NOT_FOUND);
+            }else{
 
 
-        $this->set_response($this->data, REST_Controller::HTTP_OK);
-    }
+                $sql = "SELECT e.*, s.photo, CONCAT(s.first_name, ' ', s.last_name) as fullname, s.register_no, s.parent_id, s.email, s.mobileno, s.blood_group, s.birthday, s.admission_date, l.active, c.name as class_name, se.name as section_name, sc.name as category FROM enroll as e INNER JOIN student as s ON e.student_id = s.id INNER JOIN login_credential as l ON l.user_id = s.id and l.role = 7 LEFT JOIN class as c ON e.class_id = c.id LEFT JOIN section as se ON e.section_id=se.id LEFT JOIN student_category as sc ON sc.id=s.category_id WHERE e.class_id = " . $this->db->escape($classID) . " AND e.branch_id = " . $this->db->escape($branchID) ."";
 
-    public function studentAttendance_get() {
-        $this->load->model('fees_model');
-        $this->load->model('exam_model');
+                $students =  $this->db->query($sql)->result();
 
-        $headers = $this->input->request_headers();
-//        $id = $headers['id'];
+                if(!empty($students)){
 
-        $id = $this->get('student_id');
-
-        $this->data['month'] = $month = date('m', strtotime($this->get('timestamp')));
-        $this->data['year'] = $year = date('Y', strtotime($this->get('timestamp')));
-        $this->data['days'] = $days = cal_days_in_month(CAL_GREGORIAN, $this->data['month'], $this->data['year']);
-
-        $this->data['title'] = 'Monthly Attendance Sheet of ' . date("F Y", strtotime($year . '-' . $month));
-        $this->data['student'] = $student = $this->userrole_model->getStudentDetailsById($id);
-
-        if (!empty($student)) {
-            $total_present = 0;
-            $total_absent = 0;
-            $total_late = 0;
-            for ($i = 1; $i <= $days; $i++) {
-                $date = date('Y-m-d', strtotime($year . '-' . $month . '-' . $i));
-                $atten = $this->userrole_model->get_attendance_by_date($id, $date);
-
-//                echo '<pre>';
-//                print_r($atten);
-//                exit;
-
-                if ($atten['status'] == 'A') {
-                    $total_absent++;
-                } else if ($atten['status'] == 'P') {
-                    $total_present++;
-                } else if ($atten['status'] == 'L') {
-                    $total_late++;
-                } else if ($atten['status'] == 'H') {
-                    $total_hospital++;
-                } else {
-                    // $total_absent++;
-                }
-
-                if ($atten['status'] == '') {
-                    $this->data['atten'][$i]['status'] = '-';
-                } else {
-                    $this->data['atten'][$i]['status'] = $atten['status'];
-                }
-
-                $this->data['atten'][$i]['remark'] = "{$atten['remark']}";
-                $adate = $atten['date'];
-                $cdate = $atten['created_at'];
-                $time = new DateTime($cdate);
-                $date = $time->format('d-m-Y');
-                $time = $time->format('H:i');
-
-                $this->data['atten'][$i]['attendance_date'] = "{$adate}";
-                $this->data['atten'][$i]['creation_date'] = "{$date}";
-                $this->data['atten'][$i]['creation_time'] = "{$time}";
-            }
-
-
-            $this->data['total_absent'] = $total_absent;
-            $this->data['total_present'] = $total_present;
-            $this->data['total_late'] = $total_late;
-            $this->data['total_hospital'] = $total_hospital;
-
-            $this->data['status'] = TRUE;
-            $this->data['message'] = '';
-
-            $this->set_response($this->data, REST_Controller::HTTP_OK);
-        } else {
-            $this->data['status'] = FALSE;
-            $this->data['message'] = translate('No_record_found.');
-            // Set the response and exit
-            $this->response($this->data, REST_Controller::HTTP_NOT_FOUND); // NOT_FOUND (404) being the HTTP response code
-        }
-    }
-
-    public function studentExam_get() {
-        $this->load->model('exam_model');
-
-        $headers = $this->input->request_headers();
-//        $id = $headers['id'];
-
-        $id = $this->get('student_id');
-
-        $this->data['title'] = translate('exam_master');
-        $this->data['student'] = $this->student_model->getSingleStudent($id);
-        $stu = $this->data['student'];
-
-
-
-        if (!empty($stu)) {
-            $this->db->where('class_id', $stu['class_id']);
-            $this->db->where('section_id', $stu['section_id']);
-            $this->db->where('session_id', $stu['session_id']);
-            $this->db->group_by('exam_id');
-            $variable = $this->db->get('timetable_exam')->result_array();
-
-
-            foreach ($variable as $erow) {
-                $examID = $erow['exam_id'];
-
-                $this->data['exam_title'][] = $this->application_model->exam_name_by_id($examID);
-
-                $result = $this->exam_model->getStudentReportCard($stu['id'], $examID, $stu['session_id']);
-
-                $this->data['student_result'][] = $result['exam'];
-
-                if (!empty($result['exam'])) {
-                    $student = $result['student'];
-                    $getMarksList = $result['exam'];
-                    $getExam = $this->db->where(array('id' => $examID))->get('exam')->row_array();
-
-                    $this->data['examDetailData'][] = $getExam;
-
-                    $getSchool = $this->db->where(array('id' => $getExam['branch_id']))->get('branch')->row_array();
-                    $schoolYear = get_type_name_by_id('schoolyear', get_session_id(), 'school_year');
-
-                    $markDistribution = json_decode($getExam['mark_distribution'], true);
-                    $colspan = count($markDistribution) + 1;
-                    $total_grade_point = 0;
-                    $grand_obtain_marks = 0;
-                    $grand_full_marks = 0;
-                    $result_status = 1;
-                    foreach ($getMarksList as $row) {
-                        $total_obtain_marks = 0;
-                        $total_full_marks = 0;
-                        $fullMarkDistribution = json_decode($row['mark_distribution'], true);
-                        $obtainedMark = json_decode($row['get_mark'], true);
-                        foreach ($fullMarkDistribution as $i => $val) {
-                            $obtained_mark = floatval($obtainedMark[$i]);
-                            $fullMark = floatval($val['full_mark']);
-                            $passMark = floatval($val['pass_mark']);
-                            if ($obtained_mark < $passMark) {
-                                $result_status = 0;
-                            }
-
-                            $total_obtain_marks += $obtained_mark;
-                            $obtained = $row['get_abs'] == 'on' ? 'Absent' : $obtained_mark;
-                            $total_full_marks += $fullMark;
-                        }
-                        $grand_obtain_marks += $total_obtain_marks;
-                        $grand_full_marks += $total_full_marks;
-                    }
+                    $this->set_response(array('status' => TRUE, 'students' => $students), REST_Controller::HTTP_OK);
+                }else{
+                    $this->response(array('status' => FALSE, 'message' => translate('no_record_found')), REST_Controller::HTTP_NOT_FOUND);
                 }
             }
-
-            $this->data['examDetail'] = $variable;
-
-
-
-
-            $this->data['grand_obtain_marks'] = $grand_obtain_marks;
-            $this->data['grand_full_marks'] = $grand_full_marks;
-
-            $percentage = ($grand_obtain_marks * 100) / $grand_full_marks;
-            $this->data['avg'] = number_format($percentage, 2, '.', '') . '%';
-            $this->data['result_status'] = ($result_status == 0 ? 'Fail' : 'Pass');
-
-            $this->data['status'] = TRUE;
-            $this->data['message'] = '';
-
-            $this->set_response($this->data, REST_Controller::HTTP_OK);
-        } else {
-            $this->data['status'] = FALSE;
-            $this->data['message'] = translate('No_record_found.');
-            // Set the response and exit
-            $this->response($this->data, REST_Controller::HTTP_NOT_FOUND); // NOT_FOUND (404) being the HTTP response code
+ 
+        } catch (Exception $ex) {
+            $response = array("status" => FALSE,"message" => 'Unauthorized token');
+            $this->response($response, REST_Controller::HTTP_UNAUTHORIZED);
+        
         }
+       
     }
 
-    public function leave_get() {
-        $this->data['title'] = translate('leaves');
-        $headers = $this->input->request_headers();
-        $id = $this->get('student_id');
-        $where = array('la.user_id' => $id, 'la.role_id' => 7);
-        $this->data['leavelist'] = $this->leave_model->getLeaveList($where);
-
-        $this->set_response($this->data, REST_Controller::HTTP_OK);
-    }
-
-    public function leaverequest_post() {
-        $data = new stdClass();
-        $student_id = $leave_category = $this->post('student_id');
-        $data->leave_category = $leave_category = $this->post('leave_category');
-        $data->daterange = $daterange = $this->post('daterange');
-        $data->attachment_file = $attachment_file = $this->post('attachment_file');
-
-        if (!$leave_category) {
-            $invalidLogin = ['invalid' => translate('leave_category')];
-            $this->response($invalidLogin, REST_Controller::HTTP_NOT_FOUND);
-        }
-        if (!$daterange) {
-            $invalidLogin = ['invalid' => translate('leave_date')];
-            $this->response($invalidLogin, REST_Controller::HTTP_NOT_FOUND);
-        }
-
-
-        $this->load->model('authentication_model');
-
-
-        if (empty($invalidLogin)) {
-            $leave_type_id = $this->input->post('leave_category');
-            $branch_id = $this->application_model->get_branch_id();
-            $daterange = explode(' - ', $this->input->post('daterange'));
-            $start_date = date("Y-m-d", strtotime($daterange[0]));
-            $end_date = date("Y-m-d", strtotime($daterange[1]));
-            $reason = $this->input->post('reason');
-            $apply_date = date("Y-m-d H:i:s");
-            $datetime1 = new DateTime($start_date);
-            $datetime2 = new DateTime($end_date);
-            $leave_days = $datetime2->diff($datetime1)->format("%a") + 1;
-            $orig_file_name = '';
-            $enc_file_name = '';
-            // upload attachment file
-            if (isset($_FILES["attachment_file"]) && !empty($_FILES['attachment_file']['name'])) {
-                $config['upload_path'] = './uploads/attachments/leave/';
-                $config['allowed_types'] = "*";
-                $config['max_size'] = '2024';
-                $config['encrypt_name'] = true;
-                $this->upload->initialize($config);
-                $this->upload->do_upload("attachment_file");
-                $orig_file_name = $this->upload->data('orig_name');
-                $enc_file_name = $this->upload->data('file_name');
-            }
-            $arrayData = array(
-                'user_id' => $student_id,
-                'role_id' => 7,
-//                'session_id' => get_session_id(),
-                'category_id' => $leave_type_id,
-                'reason' => $reason,
-                'branch_id' => $branch_id,
-                'start_date' => date("Y-m-d", strtotime($start_date)),
-                'end_date' => date("Y-m-d", strtotime($end_date)),
-                'leave_days' => $leave_days,
-                'status' => 1,
-                'orig_file_name' => $orig_file_name,
-                'enc_file_name' => $enc_file_name,
-                'apply_date' => $apply_date,
-            );
-            $this->db->insert('leave_application', $arrayData);
-            set_alert('success', translate('information_has_been_saved_successfully'));
-        }
-    }
 
 }

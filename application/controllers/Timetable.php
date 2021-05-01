@@ -163,7 +163,11 @@ class Timetable extends Admin_Controller
         if ($_POST) {
             $classID = $this->input->post('class_id');
             $sectionID = $this->input->post('section_id');
+
+
             $this->data['examlist'] = $this->timetable_model->getExamTimetableList($classID, $sectionID, $branchID);
+
+                       
         }
         $this->data['branch_id'] = $branchID;
         $this->data['title'] = translate('exam') . " " . translate('schedule');
