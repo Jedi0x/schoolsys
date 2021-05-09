@@ -4,7 +4,7 @@ $this->db->where_in('field_id', array(2,3));
 $this->db->delete('custom_fields_values');
 ?>
 
-<?php $widget = (is_superadmin_loggedin() ? 3 : 4); ?>
+<?php $widget = (is_superadmin_loggedin() ? 4 : 4); ?>
 
 <div class="row">
 
@@ -38,7 +38,7 @@ $this->db->delete('custom_fields_values');
 
 				<div class="row">
 
-					<div class="col-md-3 mb-sm">
+					<div class="col-md-4 mb-sm">
 
 						<div class="form-group">
 
@@ -70,7 +70,7 @@ $this->db->delete('custom_fields_values');
 
 					
 
-					<div class="col-md-3 mb-sm">
+					<div class="col-md-4 mb-sm">
 
 						<div class="form-group">
 
@@ -86,7 +86,7 @@ $this->db->delete('custom_fields_values');
 
 				
 
-					<div class="col-md-3 mb-sm">
+					<div class="col-md-4 mb-sm">
 
 						<div class="form-group">
 
@@ -100,7 +100,15 @@ $this->db->delete('custom_fields_values');
 
 					</div>
 
-					<div class="col-md-3 mb-sm">
+					
+
+				</div>
+
+
+
+				<div class="row mb-md">
+
+					<div class="col-md-4 mb-sm">
 
 						<div class="form-group">
 
@@ -121,12 +129,6 @@ $this->db->delete('custom_fields_values');
 						</div>
 
 					</div>
-
-				</div>
-
-
-
-				<div class="row mb-md">
 
 					<?php if (is_superadmin_loggedin()): ?>
 
@@ -176,6 +178,14 @@ $this->db->delete('custom_fields_values');
 
 					</div>
 
+					
+
+					
+
+				</div>
+
+				<div class="row mb-md">
+
 					<div class="col-md-<?php echo $widget; ?> mb-sm">
 
 						<div class="form-group">
@@ -197,6 +207,7 @@ $this->db->delete('custom_fields_values');
 						</div>
 
 					</div>
+
 
 					<div class="col-md-<?php echo $widget; ?> mb-sm">
 
@@ -220,6 +231,24 @@ $this->db->delete('custom_fields_values');
 
 					</div>
 
+
+					<div class="col-md-<?php echo $widget; ?> mb-sm">
+
+						<div class="form-group">
+
+							<label class="control-label"><?=translate('fee_group')?> <span class="required">*</span></label>
+
+							<?php
+										$arrayGroup = $this->app_lib->getSelectByBranch('fee_groups', $branch_id);
+										echo form_dropdown("fee_group_id", $arrayGroup, set_value('fee_group_id'), "class='form-control' id='groupID' required
+										data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity' ");
+									?>
+
+							<span class="error"><?=form_error('fee_group')?></span>
+
+						</div>
+
+					</div>
 				</div>
 
 				
@@ -1109,3 +1138,23 @@ $this->db->delete('custom_fields_values');
 	</div>
 
 </div>
+
+<script type="text/javascript">
+	$(document).ready(function () {
+		$('#branch_id').on('change', function(){
+			var branchID = $(this).val();
+			getClassByBranch(branchID);
+
+		    $.ajax({
+		        url: base_url + 'fees/getGroupByBranch',
+		        type: 'POST',
+		        data: {
+		            'branch_id' : branchID,
+		        },
+		        success: function (data) {
+		            $('#groupID').html(data);
+		        }
+		    });
+		});
+	});
+</script>

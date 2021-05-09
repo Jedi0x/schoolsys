@@ -462,21 +462,22 @@ class User extends REST_Controller {
         try{
             $user_data = JWT::decode($token, "user_auth",array('HS256'));
 
-            $user_id = $this->get('student_id');
+            $student_id = $this->get('student_id');
 
-            if(empty($user_id)){
+            if(empty($student_id)){
                 $this->response(array('status' => FALSE, 'message' => translate('student_id_is_missing.')), REST_Controller::HTTP_NOT_FOUND);
-            }else{
+            } else {
 
-                $this->db->select('s.*,l.username,l.active,e.class_id,e.section_id,e.id as enrollid,e.roll,e.branch_id,e.session_id,c.name as class_name,se.name as section_name,sc.name as category_name');
+                $this->db->select('s.register_no,s.admission_date,s.first_name,s.last_name,s.gender,s.birthday,s.religion,s.caste,s.blood_group,s.mother_tongue,s.current_address,s.permanent_address,s.city,s.state,s.mobileno,s.category_id,s.email,s.parent_id,s.route_id,s.vehicle_id,s.hostel_id,s.room_id,s.previous_details,s.photo,s.created_at,s.updated_at
+                    ,l.username,l.active,e.class_id,e.section_id,e.id as enrollid,e.roll,e.branch_id,e.session_id,c.name as class_name,se.name as section_name,sc.name as category_name');
                 $this->db->from('enroll as e');
                 $this->db->join('student as s', 'e.student_id = s.id', 'left');
                 $this->db->join('login_credential as l', 'l.user_id = s.id and l.role = 7', 'inner');
                 $this->db->join('class as c', 'e.class_id = c.id', 'left');
                 $this->db->join('section as se', 'e.section_id = se.id', 'left');
                 $this->db->join('student_category as sc', 's.category_id=sc.id', 'left');
-                $this->db->where('s.id', $user_id);
-                $student =  $this->db->get()->result();
+                $this->db->where('s.id', $student_id);
+                $student =  $this->db->get()->row();
 
                 if(!empty($student)){
                     $this->set_response(array('status' => TRUE, 'student' => $student), REST_Controller::HTTP_OK);

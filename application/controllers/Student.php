@@ -46,6 +46,8 @@ class Student extends Admin_Controller
 
         $this->load->model('sms_model');
 
+        $this->load->model('fees_model');
+
     }
 
 
@@ -156,6 +158,10 @@ class Student extends Admin_Controller
 
         $getBranch = $this->getBranchDetails();
 
+        
+
+
+
         $branchID = $this->application_model->get_branch_id();
 
         if (isset($_POST['save'])) {
@@ -194,7 +200,18 @@ class Student extends Admin_Controller
 
                 $post = $this->input->post();
 
+
                 //save all student information in the database file
+
+                if(isset($post['parent_id'])){
+                
+        
+                    $parent = $this->db->get_where('login_credential', array('user_id' => 1,'role' => 6))->row();
+
+                    $post['grd_username'] = $parent->username;
+                    $post['grd_password'] = $parent->password;                    
+
+                }
 
                 $studentID = $this->student_model->save($post, $getBranch);
 
@@ -219,6 +236,80 @@ class Student extends Admin_Controller
                 $this->db->insert('enroll', $arrayEnroll);
 
 
+                // fee allocation
+
+                $arrayAllocation = array(
+
+                    'student_id' => $studentID,
+
+                    'class_id' => $post['class_id'],
+
+                    'section_id' => $post['section_id'],
+
+                    'group_id' => $post['fee_group_id'],
+
+                    'session_id' => $post['year_id'],
+
+                    'branch_id' => $branchID,
+
+                );
+
+                $this->db->insert('fee_allocation', $arrayAllocation);
+
+
+                // create fee voucher
+
+               
+                $students = $studentID;
+                $carry_balance =  0;
+                $fee_month = array(date('m'));
+                $due_date = date('Y-m-d',strtotime(date('Y-m-d') . "+5 days"));
+                $valid_date = date('Y-m-d',strtotime(date('Y-m-d') . "+10 days"));
+
+
+
+                $fee_voucher = array(
+                    'voucher_no' => voucher_no(),
+                    'voucher_barcode' => uniqid(),
+                    'student_id' => $students,
+                    'carry_balance' => $carry_balance,
+                    'fee_month' => serialize($fee_month),
+                    'fee_year' => date("Y"),
+                    'fee_instruction' => '',
+                    'session_id' => get_session_id(),
+                    'due_date' => $due_date,
+                    'valid_date' => $valid_date,
+                );
+
+                $success = $this->fees_model->fee_voucher($fee_voucher);
+                if($success){
+
+                    foreach ($fee_month as $k => $v) {
+                        $this->db->insert('fee_voucher_months', array(
+                            'fee_voucher_id' => $success,
+                            'student_id' => $students,
+                            'fee_month' => $v,
+                            'fee_year' => date("Y"),
+                        ));
+                    }
+
+                    $voucherables = get_voucher_able(serialize($fee_month),$students);
+                    foreach ($voucherables as $k1 => $voucherable) {
+                        $this->db->insert('fee_voucherables', array(
+                            'voucher_id' => $success,
+                            'fee_head' => $voucherable['name'],
+                            'allocation_id' => $voucherable['allocation_id'],
+                            'amount' => $voucherable['amount'],
+                            'fee_type_id' => $voucherable['fee_type_id'],
+                        ));
+                    }
+                        // Update next invoice number in settings
+                    $this->db->where('name', 'next_voucher_number');
+                    $this->db->set('value', 'value+1', false);
+                    $this->db->update('options');
+                }
+                            
+              
 
                 // handle custom fields data
 

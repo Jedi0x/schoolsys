@@ -6,6 +6,13 @@ if(isset($active_tab)){
 }
 
 ?>
+<style type="text/css">
+	
+	.title{
+		color: #ffbd2e;
+	}
+</style>
+
 <section class="panel">
 	<div class="tabs-custom">
 		<ul class="nav nav-tabs">
@@ -26,21 +33,116 @@ if(isset($active_tab)){
 			<div id="all_vouchers" class="tab-pane <?php echo ($tabs_active == 'all_vouchers' ? 'active' : '' ); ?>">
 				<div class="row">
 					<div class="col-md-12">
-						<section class="panel appear-animation" data-appear-animation="<?= $global_config['animations'] ?>" data-appear-animation-delay="100">
-							<header class="panel-heading">
-								<h4 class="panel-title"><i class="fas fa-list"></i> <?php echo translate('fee_vouchers'); ?></h4>
-							</header>
-							<div class="dx-viewport col-md-12 pt-md  pb-md">        
-								<div id="gridContainer">
-									<div class="options">
-										<div class="caption">Options</div>
-										<div class="option">            
-											<div id="autoExpand"></div>
-										</div>    
-									</div>
-								</div>
-							</div>
-						</section>
+						
+						
+
+
+							<?php
+for ($month = 1; $month <= 12; $month++) { 
+
+	$show = '';
+	$aria = "false";
+	$receivable = 0;
+	$paid = 0;
+	$previuos_balance = 0;
+	if(date('m') == $month){
+		$show = 'show';
+		$aria = "true";
+	}
+
+	?>
+
+<div class="col-md-12">
+	<div class="panel-group" id="accordion">
+		<div class="panel panel-accordion">
+			<div class="panel-heading">
+				<h4 class="panel-title">
+					<a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#fees<?=$month?>" aria-expanded="<?=$aria?>">
+						<i class="fas fa-money-check"></i> <?= voucher_month($month).' '. date("Y"). ' '. translate('vouchers') ?>
+					</a>
+				</h4>
+
+
+
+
+			</div>
+
+			<div id="fees<?=$month?>" class="accordion-body collapse <?=$show?>">
+				<div class="panel-body">
+					
+					<!-- <table width="100%">
+						<tr>
+						
+						<td class="text-left"><span class="title"> Generated Amount: </span> <?=$receivable?></td>
+						<td class="text-center"><span class="title"> Received Amount: </span> <?=$paid?></td>
+						
+					</tr>
+					</table> -->
+					
+			
+					<div class="table-responsive mt-md mb-md">
+						<table class="table table-bordered table-condensed table-hover mb-none tbr-top">
+
+							<thead>
+								<tr class="text-dark">
+									<th>#</th>
+									<th><?=translate("voucher_no")?></th>
+									<th><?=translate("student")?></th>
+									<th><?=translate("register_no")?></th>
+									<th><?=translate("mobile_no")?></th>
+									<th><?=translate("section_name")?></th>
+									<th><?=translate("class_name")?></th>
+									<th><?=translate("action")?></th>
+								</tr>
+							</thead>
+							<tbody>
+								<?php 
+									$vouchers = get_monthly_vouchers($month);
+									if(!empty($vouchers)){ 
+										$sr_no = 1;
+										foreach ($vouchers as $k => $voucher) { ?>
+											<tr>
+												<td><?=$sr_no?></td>
+												<td><?=$voucher['voucher_no']?></td>
+												<td><?=$voucher['student_name']?></td>
+												<td><?=$voucher['register_no']?></td>
+												<td><?=$voucher['mobileno']?></td>
+												<td><?=$voucher['section_name']?></td>
+												<td><?=$voucher['class_name']?></td>
+												<td>
+													<a href="<?=base_url('fees/view_voucher/').$voucher['voucher_no'];?>" class="btn btn-default btn-circle icon" data-toggle="tooltip" data-original-title="View">
+														<i class="far fa-arrow-alt-circle-right"></i>
+													</a>
+
+													<a href="<?=base_url('fees/print_voucher/').$voucher['voucher_no'];?>" class="btn btn-default btn-circle icon" data-toggle="tooltip" data-original-title="Print">
+														<i class="fas fa-print"></i>
+													</a>
+
+												</td>
+											</tr>
+										 	<?php
+										 	$sr_no++;
+										 } ?>
+
+										
+
+										<?php
+
+									}else{
+										echo '<tr><td colspan="9"><h5 class="text-danger text-center">' . translate('no_information_available') . '</td></tr>'; 
+									}
+								 ?>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<?php } ?>
+
 
 					</div>
 				</div>
@@ -120,6 +222,7 @@ if(isset($active_tab)){
 									<h4 class="panel-title"><i class="fas fa-list"></i> <?php echo translate('student_list');?></h4>
 								</header>
 								<div class="panel-body mb-sm">
+
 									<table class="table table-bordered table-condensed table-hover mb-none">
 										<thead>
 											<tr>
@@ -331,7 +434,7 @@ if(isset($active_tab)){
 				<div class="col-md-9">
 					<?php
 					$array_months = $this->app_lib->get_months();
-					echo form_dropdown("fee_month[]", $array_months, set_value('fee_month'), "class='form-control' id='frequency_type'
+					echo form_dropdown("fee_month[]", $array_months, set_value('fee_month'), "class='form-control' id='frequency_type' required = ''
 						data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity' multiple='multiple'" );
 						?>
 					<span class="error"></span>
@@ -400,146 +503,3 @@ if(isset($active_tab)){
 		});
 	});
 </script>
-
-<script>window.jQuery || document.write(decodeURIComponent('%3Cscript src="js/jquery.min.js"%3E%3C/script%3E'))</script>
-<link rel="stylesheet" type="text/css" href="https://cdn3.devexpress.com/jslib/20.2.5/css/dx.common.css" />
-<link rel="stylesheet" type="text/css" href="https://cdn3.devexpress.com/jslib/20.2.5/css/dx.light.css" />
-<script src="https://cdn3.devexpress.com/jslib/20.2.5/js/dx.all.js"></script>
-
-
-
-
-<script>
-    $(function () {
-        var dataGrid = $("#gridContainer").dxDataGrid({
-            dataSource: orders,
-            columnsAutoWidth: true,
-            showBorders: true,
-            grouping: {
-                autoExpandAll: true,
-            },
-            paging: {
-                pageSize: 100
-            },
-            groupPanel: {
-                visible: true
-            },
-            filterRow: {
-                visible: true,
-                applyFilter: "auto"
-            },
-            searchPanel: {
-                visible: true,
-                placeholder: "Search..."
-            },
-            headerFilter: {
-                visible: true
-            },
-            columns: [
-                {
-                    dataField: "voucher_no",
-                    caption: "Voucher No",
-                    headerFilter: {
-                        groupInterval: 10000
-                    }
-                },{
-                    dataField: "student_name",
-                    caption: "Student",
-                    headerFilter: {
-                        groupInterval: 10000
-                    }
-                }, {
-                    caption: "Register No",
-                    dataField: "register_no",
-                    headerFilter: {
-                        allowSearch: true
-                    }
-                }, {
-                    caption: "Mobile No",
-                    dataField: "mobileno",
-                    headerFilter: {
-                        allowSearch: true
-                    }
-                }, {
-                    caption: "Section Name",
-                    dataField: "section_name",
-                    headerFilter: {
-                        allowSearch: true
-                    }
-                }, {
-                    caption: "Class Name",
-                    dataField: "class_name",
-                    headerFilter: {
-                        allowSearch: true
-                    }
-                }, {
-                    caption: "Fee Month",
-                    dataField: "fee_month",
-                    headerFilter: {
-                        allowSearch: true
-                    }
-                }
-            ]
-        }).dxDataGrid('instance');
-
-        var applyFilterTypes = [{
-                key: "auto",
-                name: "Immediately"
-            }, {
-                key: "onClick",
-                name: "On Button Click"
-            }];
-
-        var applyFilterModeEditor = $("#useFilterApplyButton").dxSelectBox({
-            items: applyFilterTypes,
-            value: applyFilterTypes[0].key,
-            valueExpr: "key",
-            displayExpr: "name",
-            onValueChanged: function (data) {
-                dataGrid.option("filterRow.applyFilter", data.value);
-            }
-        }).dxSelectBox("instance");
-
-        $("#filterRow").dxCheckBox({
-            text: "Filter Row",
-            value: true,
-            onValueChanged: function (data) {
-                dataGrid.clearFilter();
-                dataGrid.option("filterRow.visible", data.value);
-                applyFilterModeEditor.option("disabled", !data.value);
-            }
-        });
-
-        $("#headerFilter").dxCheckBox({
-            text: "Header Filter",
-            value: true,
-            onValueChanged: function (data) {
-                dataGrid.clearFilter();
-                dataGrid.option("headerFilter.visible", data.value);
-            }
-        });
-
-        function getOrderDay(rowData) {
-            return (new Date(rowData.OrderDate)).getDay();
-        }
-
-        $("#autoExpand").dxCheckBox({
-            value: true,
-            text: "Expand All Groups",
-            onValueChanged: function (data) {
-                dataGrid.option("grouping.autoExpandAll", data.value);
-            }
-        });
-    });
-
-    var orders = <?= json_encode($all_vouchers); ?>;
-</script>
-
-<style>
-    .dx-theme-generic-typography{
-        overflow-y: auto;
-    }
-    .dx-widget tr.dx-datagrid-filter-row{
-        display: none;
-    }
-</style>

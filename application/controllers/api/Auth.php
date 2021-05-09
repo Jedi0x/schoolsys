@@ -24,6 +24,7 @@ class Auth extends REST_Controller {
 
         // initilized models
         $this->load->model('authentication_model');
+        $this->load->model('application_model');
 
   
     }

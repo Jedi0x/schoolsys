@@ -668,4 +668,176 @@ function check_student_fee($student_id)
 }
 
 
+function voucher_month($month)
+{
+    switch ($month) {
+      case 1:
+      echo 'January';
+      break;
+
+      case 2:
+      echo 'February';
+      break;
+
+      case 3:
+      echo 'March';
+      break;
+
+      case 4:
+      echo 'April';
+      break;
+
+      case 5:
+      echo 'May';
+      break;
+
+      case 6:
+      echo 'June';
+      break;
+
+      case 7:
+      echo 'July';
+      break;
+
+      case 8:
+      echo 'August';
+      break;
+
+      case 9:
+      echo 'September';
+      break;
+
+      case 10:
+      echo 'October';
+      break;
+
+      case 11:
+      echo 'November';
+      break;
+
+      case 12:
+      echo 'December';
+      break;
+  }
+
+}
+
+
+function get_monthly_vouchers($month)
+{
+    $CI = & get_instance();
+    $voucher_list = array();
+    $CI->db->select('enroll.student_id,enroll.roll,student.first_name,student.last_name,student.register_no,student.mobileno,class.name as class_name,section.name as section_name,fee_vouchers.voucher_no as voucher_no, fee_vouchers.fee_month as fee_month, fee_vouchers.status as status');
+    $CI->db->from('fee_vouchers');
+    $CI->db->join('fee_allocation', 'fee_allocation.student_id = fee_vouchers.student_id');
+    $CI->db->join('enroll', 'enroll.student_id = fee_allocation.student_id');
+    $CI->db->join('student', 'student.id = enroll.student_id');
+    $CI->db->join('class', 'class.id = enroll.class_id', 'left');
+    $CI->db->join('section', 'section.id = enroll.section_id', 'left');
+    $CI->db->where('fee_vouchers.status',0);
+    $CI->db->where('MONTH(fee_vouchers.due_date) = ',$month);
+    $CI->db->where('YEAR(fee_vouchers.due_date) = YEAR(CURDATE())');
+    $CI->db->order_by('enroll.id', 'asc');
+
+    $result = $CI->db->get()->result_array();
+    if(!empty($result)){
+        foreach ($result as $k => $v) {
+            array_push($voucher_list, array(
+                'student_name' => $v['first_name'].' '.$v['last_name'],
+                'register_no' => $v['register_no'],
+                'mobileno' => $v['mobileno'],
+                'class_name' => $v['class_name'],
+                'section_name' => $v['section_name'],
+                'voucher_no' => $v['voucher_no'],
+                'fee_month' => get_voucher_month($v['fee_month'])
+            ));
+        }
+    }
+    $filter = array_column($voucher_list, 'voucher_no');
+
+    array_multisort($filter, SORT_DESC, $voucher_list);
+
+    return $voucher_list;
+}
+
+function student_voucher($student,$fee_months)
+{
+    $CI = & get_instance();
+    $CI->db->select("MONTH(created_at) as allocation_month, YEAR(created_at) as allocation_year");
+    $CI->db->from('fee_allocation');
+    $CI->db->where('student_id',$student);
+    $result = $CI->db->get()->row();
+
+    $allocation_month = $result->allocation_month;
+    $allocation_year = $result->allocation_year;
+
+    if ($fee_months[0] >= $allocation_month){
+        if($allocation_year == date('Y')){   
+            for ($i=$allocation_month; $i < $fee_months[0]; $i++) { 
+                $CI->db->select("*");
+                $CI->db->from('fee_voucher_months');
+                $CI->db->where('student_id',$student);
+                $CI->db->where('fee_month',$i);
+                $CI->db->where('fee_year',date('Y'));
+                $result = $CI->db->get()->row();
+                if(empty($result)){
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        
+        
+    }else{
+        return false;
+    }
+
+    
+
+}
+
+
+function get_voucher_able($fee_months,$student_id){
+
+    $CI = & get_instance();
+    $arr = array();
+    $CI->db->select('fee_allocation.id as allocation_id,fee_allocation.student_id as student_id, fees_type.name, fees_type.frequency as fees_frequency,fees_type.frequency_type as fee_frequency_type,fee_groups_details.amount, fee_groups_details.due_date, fee_groups_details.fee_type_id');
+    $CI->db->from('fee_allocation');
+    $CI->db->join('fee_groups_details', 'fee_groups_details.fee_groups_id = fee_allocation.group_id');
+    $CI->db->join('fees_type', 'fees_type.id = fee_groups_details.fee_type_id');
+    $CI->db->where('fee_allocation.student_id', $student_id);
+    $result = $CI->db->get()->result_array();
+
+    if(!empty($result)){
+        foreach ($result as $key => $value) {
+
+            if($value['fee_frequency_type'] == 1){
+
+                $checkstudentFee = check_student_fee($student_id);
+                if(!$checkstudentFee){
+                    array_push($arr, array('allocation_id'=> $value['allocation_id'], 'name' => $value['name'], 'amount' => $value['amount'], 'fee_type_id' => $value['fee_type_id']));
+                }
+
+            } 
+            else if($value['fee_frequency_type'] == 3){
+
+                $res = array_intersect(unserialize($fee_months),unserialize($value['fees_frequency']));
+                if(!empty($res)){
+                    array_push($arr, array('allocation_id'=> $value['allocation_id'], 'name' => $value['name'], 'amount' => $value['amount'], 'fee_type_id' => $value['fee_type_id']));
+                }
+
+            } else if($value['fee_frequency_type'] == 2){
+                array_push($arr, array('allocation_id'=> $value['allocation_id'], 'name' => $value['name'], 'amount' => $value['amount'], 'fee_type_id' => $value['fee_type_id']));
+            }
+
+
+        } 
+    }
+
+    return $arr;
+
+}
+
+
 

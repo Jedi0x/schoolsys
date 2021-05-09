@@ -220,21 +220,6 @@
 										<?php endif; ?>
 
 
-										<?php if($total_paid  ==  0){ ?>
-										<li>
-											
-											<?php echo form_open('fees/collect_fee', array('class' => 'form-horizontal frm-submit')); ?>
-											<strong><?=translate('paid_amount')?> : </strong> 
-											<input type="number" class="form-control" style="display: inline;width: 40%;" name="paid_amount" value="<?=$total_balance-$total_paid+$previous_balance?>" min="0" max="<?=$total_balance-$total_paid+$previous_balance?>">
-
-											<input type='hidden' name='voucher_id' value='<?=$voucher->id?>' />
-											<input type='hidden' name='student_id' value='<?=$voucher->student_id?>' />
-
-											<input type='hidden' name='amount' value='<?=$total_balance+$previous_balance?>' />
-											<button type="submit" class="btn btn-default ml-sm"><i class="fas fa-save"></i> </button>
-										<?php echo form_close();?>
-										</li>
-									<?php } ?>
 									</ul>
 								</div>
 							</div>
