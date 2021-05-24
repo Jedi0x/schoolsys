@@ -52,15 +52,15 @@ class Dashboard_model extends CI_Model
         $total_paid = array();
         $total_due = array();
         for ($month = 1; $month <= 12; $month++) {
-            $sql = "SELECT IFNULL(SUM(gd.amount), 0) as total_amount,(SELECT SUM(h.amount) FROM fee_payment_history as h where h.allocation_id = fa.id and h.type_id = gd.fee_type_id) as total_paid,(SELECT SUM(h.discount) FROM fee_payment_history as h where h.allocation_id = fa.id and h.type_id = gd.fee_type_id) as total_discount FROM fee_allocation as fa INNER JOIN fee_groups_details as gd ON gd.fee_groups_id = fa.group_id WHERE MONTH(gd.due_date) = " . $this->db->escape($month) . " AND YEAR(gd.due_date) = YEAR(CURDATE()) AND fa.session_id = " . $this->db->escape(get_session_id());
+           $sql = "SELECT IFNULL(SUM(fee_voucher_payments.amount), 0) as total_amount, SUM(fee_voucher_payments.total_paid)  as total_paid,SUM(fee_voucher_payments.total_due)  as total_due FROM fee_voucher_payments  INNER JOIN fee_vouchers  ON fee_vouchers.id = fee_voucher_payments.voucher_id JOIN fee_allocation on fee_allocation.student_id = fee_vouchers.student_id  WHERE MONTH(fee_vouchers.due_date) = " . $this->db->escape($month) . " AND YEAR(fee_vouchers.due_date) = YEAR(CURDATE()) AND fee_allocation.session_id = " . $this->db->escape(get_session_id());
             if (!empty($branchID))
-               $sql .= " AND fa.branch_id = " . $this->db->escape($branchID);
+               $sql .= " AND fee_allocation.branch_id = " . $this->db->escape($branchID);
             if (!empty($studentID))
-               $sql .= " AND fa.student_id = " . $this->db->escape($studentID);
+               $sql .= " AND fee_allocation.student_id = " . $this->db->escape($studentID);
             $row = $this->db->query($sql)->row();
             $total_fee[] = floatval($row->total_amount);
             $total_paid[] = floatval($row->total_paid);
-            $total_due[] = floatval($row->total_amount - ($row->total_paid + $row->total_discount));
+            $total_due[] = floatval($row->total_due);
         };
         return array(
             'total_fee' => $total_fee,

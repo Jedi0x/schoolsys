@@ -5,6 +5,7 @@
     {
         var $this = $(el);
         $this.on('submit', function(e){
+        
             e.preventDefault();
             var btn = $this.find('[type="submit"]');
             
@@ -25,6 +26,8 @@
                         btn.button('reset');
                     } else if (data.status == "access_denied") {
                         window.location.href = base_url + "dashboard";
+                    } else if (data.status == "warning") {
+                        $(data.div_name).html(data.msg);
                     } else {
                         if (data.url) {
                             window.location.href = data.url;

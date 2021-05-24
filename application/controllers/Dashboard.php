@@ -2,13 +2,13 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 
 /**
- * @package : Ramom school management system
+ * @package : Aanttech school management system
  * @version : 3.0
- * @developed by : RamomCoder
- * @support : ramomcoder@yahoo.com
- * @author url : http://codecanyon.net/user/RamomCoder
+ * @developed by : AanttechCoder
+ * @support : Aanttechcoder@yahoo.com
+ * @author url : http://codecanyon.net/user/AanttechCoder
  * @filename : Accounting.php
- * @copyright : Reserved RamomCoder Team
+ * @copyright : Reserved AanttechCoder Team
  */
 
 class Dashboard extends Admin_Controller
@@ -56,9 +56,13 @@ class Dashboard extends Admin_Controller
             $this->data['school_id'] = $schoolID;
             $this->data['student_by_class'] = $student_by_class = $this->dashboard_model->getStudentByClass($schoolID);
            
-//            $this->data['fees_summary'] = $this->dashboard_model->annualFeessummaryCharts($schoolID);
+             $this->data['fees_summary'] = $this->dashboard_model->annualFeessummaryCharts($schoolID);
+
+
             $this->data['income_vs_expense'] = $this->dashboard_model->getIncomeVsExpense($schoolID);
+
             $this->data['weekend_attendance'] = $this->dashboard_model->getWeekendAttendance($schoolID);
+             //debug($this->data['weekend_attendance'],true);
             $this->data['get_monthly_admission'] = $this->dashboard_model->getMonthlyAdmission($schoolID);
             $this->data['get_voucher'] = $this->dashboard_model->getVoucher($schoolID);
             $this->data['get_transport_route'] = $this->dashboard_model->get_transport_route($schoolID);
@@ -78,6 +82,8 @@ class Dashboard extends Admin_Controller
             ),
         );
         $this->data['main_menu'] = 'dashboard';
+
+
         $this->load->view('layout/index', $this->data);
     }
 }

@@ -3,13 +3,13 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 
 /**
- * @package : Ramom school management system
+ * @package : Aanttech school management system
  * @version : 3.0
- * @developed by : RamomCoder
- * @support : ramomcoder@yahoo.com
- * @author url : http://codecanyon.net/user/RamomCoder
+ * @developed by : AanttechCoder
+ * @support : Aanttechcoder@yahoo.com
+ * @author url : http://codecanyon.net/user/AanttechCoder
  * @filename : Accounting.php
- * @copyright : Reserved RamomCoder Team
+ * @copyright : Reserved AanttechCoder Team
  */
 class Inquiry extends Admin_Controller {
 
@@ -323,7 +323,8 @@ class Inquiry extends Admin_Controller {
             $sectionID = '';
             $this->data['inquiries'] = $inquiries = $this->application_model->getInquiries($classID, $sectionID, $branchID, false, true);
         }
-        
+
+
         $this->data['branch_id'] = $branchID;
         $this->data['title'] = translate('inquiry_list');
         $this->data['main_menu'] = 'inquiry';

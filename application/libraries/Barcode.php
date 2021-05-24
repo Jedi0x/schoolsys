@@ -8,7 +8,6 @@ class Barcode
 		require_once(APPPATH . '/third_party/barcode/vendor/autoload.php');
 	}
 
-
 	public function generate($barcode)
 	{
 		$generator = new Picqer\Barcode\BarcodeGeneratorPNG();

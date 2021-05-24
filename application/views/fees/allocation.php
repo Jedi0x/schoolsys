@@ -1,132 +1,122 @@
-<?php $widget = (is_superadmin_loggedin() ? 4 : 4);?>
+<?php $widget = (is_superadmin_loggedin() ? 3 : 3);?>
+
 <div class="row">
 	<div class="col-md-12">
 		<section class="panel">
-		<!-- Code by UM -->
-<!-- 		<ul class="nav nav-tabs">
-			<li class="active">
-				<a href="list"></i> <?php echo translate('fees_group') . " " . translate('list'); ?></a>
-			</li>
-			<li>
-				<a href="#create" data-toggle="tab"><i class="far fa-edit"></i> <?php echo translate('edit') . " " . translate('fees_group'); ?></a>
-			</li>
-		</ul> -->
-		<div class="tabs-custom">
-			<ul class="nav nav-tabs">
-				<li class="">
-					<a href="#list" data-toggle="tab"><i class="fas fa-list-ul"></i> <?php echo translate('fee_allocation_list'); ?></a>
-				</li>
-					<li class="active">
+			<!-- Code by UM -->
+			<div class="tabs-custom">
+				<ul class="nav nav-tabs">
+					<li class="<?php echo ($active == 'show_all' ? 'active' : ''); ?>">
+						<a href="#list" data-toggle="tab"><i class="fas fa-list-ul"></i> <?php echo translate('fee_allocation_list'); ?></a>
+					</li>
+
+					<li class="<?php echo ($active == 'allocate_fee' ? 'active' : ''); ?>">
 						<a href="#create" data-toggle="tab"><i class="far fa-edit"></i> <?php echo translate('fee_allocation'); ?></a>
 					</li>
-			</ul>
+				</ul>
 
-		<!-- code end by UM -->
-		<div class="tab-content">
+			<!-- code end by UM -->
+			<div class="tab-content">
+				<div id="list" class="tab-pane <?php echo ($active == 'show_all' ? 'active' : ''); ?>">
+					<div class="mb-md">
+						<div class="export_title">Fees Type List</div>
+						<table class="table table-bordered table-hover table-condensed table-export">
+							<thead>
+								<tr>
+									<th width="50"><?php echo translate('sl'); ?></th>
+									<th><?=translate('name')?></th>
+									<th><?=translate('class')?></th> 
+									<th><?=translate('section')?></th>
+									<th><?=translate('branch')?></th>
+									<!-- <th><?=translate('group_name')?></th> -->
+									<!-- <th><?=translate('description')?></th> -->
+								</tr>
+							</thead>
+							<tbody>
+								<?php $count = 1; foreach ($getfeeallocation as $row): ?>
+								<tr>
+									<td><?php echo $count++; ?></td>
+									<td><?php echo $row['student_name'];?></td>
+									<td><?php echo $row['class_name'];  ?></td>
+									<td><?php echo $row['section_name']; ?></td>
+									<td><?php echo $row['branch_name']; ?></td>
+									<!-- <td><?php echo $row['group_name'];?></td> -->
+									<!-- <td><?php echo $row['group_description']; ?></td> -->
+								</tr>
+								<?php endforeach; ?>
+							</tbody>
+						</table>
+					</div>
+				</div>
 
-				<div id="list" class="tab-pane">
-				<div class="mb-md">
-					<div class="export_title">Fees Type List</div>
-					<table class="table table-bordered table-hover table-condensed table-export">
-						<thead>
-							<tr>
-								<th width="50"><?php echo translate('sl'); ?></th>
-								<th><?=translate('name')?></th>
-								<th><?=translate('class')?></th> 
-								<th><?=translate('section')?></th>
-								<th><?=translate('branch')?></th>
-								<!-- <th><?=translate('group_name')?></th> -->
-								<!-- <th><?=translate('description')?></th> -->
-							</tr>
-						</thead>
-						<tbody>
-							<?php $count = 1; foreach ($getfeeallocation as $row): ?>
-							<tr>
-								<td><?php echo $count++; ?></td>
-								<td><?php echo $row['student_name'];?></td>
-								<td><?php echo $row['class_name'];  ?></td>
-								<td><?php echo $row['section_name']; ?></td>
-								<td><?php echo $row['branch_name']; ?></td>
-								<!-- <td><?php echo $row['group_name'];?></td> -->
-								<!-- <td><?php echo $row['group_description']; ?></td> -->
-							</tr>
-							<?php endforeach; ?>
-						</tbody>
-					</table>
+				<div class="tab-pane <?php echo ($active == 'allocate_fee' ? 'active' : ''); ?>" id="create">
+					<header class="panel-heading">
+						<h4 class="panel-title"><?=translate('select_ground')?></h4>
+					</header>
+					<?php echo form_open($this->uri->uri_string(), array('class' => 'validate'));?>
+					<div class="panel-body">
+						<div class="row mb-sm">
+							<?php if (is_superadmin_loggedin() ): ?>
+							<div class="col-md-3">
+								<div class="form-group">
+									<label class="control-label"><?=translate('branch')?> <span class="required">*</span></label>
+										<?php
+										$arrayBranch = $this->app_lib->getSelectList('branch');
+										echo form_dropdown("branch_id", $arrayBranch, set_value('branch_id'), "class='form-control' id='branch_id'
+											data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity'");
+											?>
+								</div>
+							</div>
+							<?php endif; ?>
+							<div class="col-md-<?php echo $widget; ?> mb-sm">
+								<div class="form-group">
+									<label class="control-label"><?=translate('class')?> <span class="required">*</span></label>
+										<?php
+											$arrayClass = $this->app_lib->getClass($branch_id);
+										echo form_dropdown("class_id", $arrayClass, set_value('class_id'), "class='form-control' id='class_id' onchange='getSectionByClass(this.value,1)'
+										required data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity' ");
+									?>
+								</div>
+							</div>
+							<div class="col-md-<?php echo $widget; ?> mb-sm">
+								<div class="form-group">
+									<label class="control-label"><?=translate('section')?> <span class="required">*</span></label>
+									<?php
+										$arraySection = $this->app_lib->getSections(set_value('class_id'), true);
+										echo form_dropdown("section_id", $arraySection, set_value('section_id'), "class='form-control' id='section_id' required
+										data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity' ");
+									?>
+								</div>
+							</div>
+							<div class="col-md-<?php echo $widget; ?> mb-sm">
+								<div class="form-group">
+									<label class="control-label"><?=translate('fee_group')?> <span class="required">*</span></label>
+									<?php
+										$arrayGroup = $this->app_lib->getSelectByBranch('fee_groups', $branch_id);
+										echo form_dropdown("fee_group_id", $arrayGroup, set_value('fee_group_id'), "class='form-control' id='groupID' required
+										data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity' ");
+									?>
+								</div>
+							</div>
+						</div>
+					</div>
+					<footer class="panel-footer">
+						<div class="row">
+							<div class="col-md-offset-10 col-md-2">
+								<button type="submit" name="search" value="1" class="btn btn-default btn-block"> <i class="fas fa-filter"></i> <?=translate('filter')?></button>
+							</div>
+						</div>
+					</footer>
+					<?php echo form_close();?>
 				</div>
 			</div>
-
-
-
-			<div class="tab-pane active" id="create">
-			<header class="panel-heading">
-				<h4 class="panel-title"><?=translate('select_ground')?></h4>
-			</header>
-			<?php echo form_open($this->uri->uri_string(), array('class' => 'validate'));?>
-			<div class="panel-body">
-				<div class="row mb-sm">
-				<?php if (is_superadmin_loggedin() ): ?>
-					<div class="col-md-4">
-						<div class="form-group">
-							<label class="control-label"><?=translate('branch')?> <span class="required">*</span></label>
-							<?php
-								$arrayBranch = $this->app_lib->getSelectList('branch');
-								echo form_dropdown("branch_id", $arrayBranch, set_value('branch_id'), "class='form-control' id='branch_id'
-								data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity'");
-							?>
-						</div>
-					</div>
-				<?php endif; ?>
-					<div class="col-md-<?php echo $widget; ?> mb-sm">
-						<div class="form-group">
-							<label class="control-label"><?=translate('class')?> <span class="required">*</span></label>
-							<?php
-								$arrayClass = $this->app_lib->getClass($branch_id);
-								echo form_dropdown("class_id", $arrayClass, set_value('class_id'), "class='form-control' id='class_id' onchange='getSectionByClass(this.value,1)'
-								required data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity' ");
-							?>
-						</div>
-					</div>
-					<div class="col-md-<?php echo $widget; ?> mb-sm">
-						<div class="form-group">
-							<label class="control-label"><?=translate('section')?> <span class="required">*</span></label>
-							<?php
-								$arraySection = $this->app_lib->getSections(set_value('class_id'), true);
-								echo form_dropdown("section_id", $arraySection, set_value('section_id'), "class='form-control' id='section_id' required
-								data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity' ");
-							?>
-						</div>
-					</div>
-<!-- 					<div class="col-md-<?php echo $widget; ?> mb-sm">
-						<div class="form-group">
-							<label class="control-label"><?=translate('fee_group')?> <span class="required">*</span></label>
-							<?php
-								$arrayGroup = $this->app_lib->getSelectByBranch('fee_groups', $branch_id);
-								echo form_dropdown("fee_group_id", $arrayGroup, set_value('fee_group_id'), "class='form-control' id='groupID' required
-								data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity' ");
-							?>
-						</div>
-					</div> -->
-				</div>
-			</div>
-			<footer class="panel-footer">
-				<div class="row">
-					<div class="col-md-offset-10 col-md-2">
-						<button type="submit" name="search" value="1" class="btn btn-default btn-block"> <i class="fas fa-filter"></i> <?=translate('filter')?></button>
-					</div>
-				</div>
-			</footer>
-			<?php echo form_close();?>
-		</div>
-	</div>
 		</section>
 
 		<?php if (isset($studentlist)):?>
 		<section class="panel appear-animation" data-appear-animation="<?=$global_config['animations'] ?>" data-appear-animation-delay="100">
 			<?php echo form_open($this->uri->uri_string());?>
-			<!-- <input type="hidden" name="fee_group_id" value="<?=$fee_group_id; ?>" > -->
+			<input type="hidden" name="fee_group_id" value="<?=$fee_group_id; ?>" >
 			<input type="hidden" name="branch_id" value="<?=$branch_id; ?>" >
-
 			<input type="hidden" name="class_id" value="<?=set_value('class_id'); ?>" >
 			<input type="hidden" name="section_id" value="<?=set_value('section_id'); ?>" >
 			<header class="panel-heading">

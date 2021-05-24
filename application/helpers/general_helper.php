@@ -472,3 +472,398 @@ function debug($arr, $exit = false)
   if($exit)
     exit;
 }
+
+function get_option($name='')
+{
+    $CI = & get_instance();
+    $CI->db->select('value');
+    $CI->db->where('name', $name);
+    $row = $CI->db->get('options')->row();
+    if ($row) {
+        $val = $row->value;
+    }else{
+        $val= '';
+    }
+
+    return $val;
+}
+
+
+function voucher_no()
+{
+    $voucher_no = str_pad(get_option('next_voucher_number'), get_option('number_padding_prefixes'), '0', STR_PAD_LEFT);
+
+    return $voucher_no;
+}
+
+function get_fee_type_discount($student,$fee_type)
+{
+    $CI = & get_instance();
+    $CI->db->select('*');
+    $CI->db->where('student_id', $student);
+    $CI->db->where('fee_type', $fee_type);
+    $row = $CI->db->get('student_discount')->row();
+    return $row;  
+}
+
+function getBalanceByType($fee_allocation_id,$fee_type_id,$voucher_no)
+{
+    $CI = & get_instance();
+    $input = $fee_allocation_id;
+    if (empty($input)) {
+        $balance = 0;
+        $fine = 0;
+    } else {
+        $fine = $CI->fees_model->feeFineCalculations($fee_allocation_id, $fee_type_id,$voucher_no);
+
+        $b = $CI->fees_model->getBalance($fee_allocation_id, $fee_type_id);
+        $balance = $b['balance'];
+        $fine = abs($fine - $b['fine']);
+    }
+    return $fine;
+}
+
+function get_voucher_month($months)
+{
+    $months = unserialize($months);
+   
+    $return_months = array();
+    if(in_array(1, $months)){
+        array_push($return_months, 'January');
+    }
+    if(in_array(2, $months)){
+        array_push($return_months, 'February');
+    }
+    if(in_array(3, $months)){
+        array_push($return_months, 'March');
+    }
+    if(in_array(4, $months)){
+        array_push($return_months, 'April');
+    }
+    if(in_array(5, $months)){
+        array_push($return_months, 'May');
+    }
+    if(in_array(6, $months)){
+        array_push($return_months, 'June');
+    }
+    if(in_array(7, $months)){
+        array_push($return_months, 'July');
+    }
+    if(in_array(8, $months)){
+        array_push($return_months, 'August');
+    }
+    if(in_array(9, $months)){
+        array_push($return_months, 'September');
+    }
+    if(in_array(10, $months)){
+        array_push($return_months, 'October');
+    }
+    if(in_array(11, $months)){
+        array_push($return_months, 'November');
+    }
+    if(in_array(12, $months)){
+        array_push($return_months, 'December');
+    }
+
+    return implode(", ",$return_months);
+}
+
+function get_status($status)
+{
+    if($status == 1){
+        $status_info = 'Paid';
+    } elseif ($status == 2) {
+        $status_info = 'Partial Paid';
+    }else{
+        $status_info = 'Unpaid';
+    }
+    return $status_info;
+}
+
+function check_voucher_month($voucher_id,$fee_type_id)
+{
+    $CI = & get_instance();
+    $check_voucher = $CI->fees_model->check_voucher_month($voucher_id, $fee_type_id);
+    return $check_voucher;
+}
+
+
+function check_added_voucher_month($student_id,$fee_month)
+{
+    $CI = & get_instance();
+    $fail = 0;
+    foreach ($fee_month as $k => $v) {
+        $CI->db->select("*");
+        $CI->db->where('fee_month',$v);
+        $CI->db->where('student_id',$student_id);
+        $CI->db->where('fee_year',date("Y"));
+        $check = $CI->db->get('fee_voucher_months')->row();
+        if(!empty($check)){
+            $fail++;
+        }
+    }
+    if($fail > 0){
+        return false;
+    }else{
+        return true;
+    }
+}
+
+
+function get_paid_amount_voucher($voucher_id)
+{
+    $CI = & get_instance();
+    $CI->db->select("*");
+    $CI->db->where('voucher_id',$voucher_id);
+    $voucher = $CI->db->get('fee_voucher_payments')->row();
+    if(!empty($voucher)){
+        return $voucher->total_paid;
+    }else{
+        return 0;
+    }
+}
+
+function previous_balance($student_id)
+{
+    $CI = & get_instance();
+    $CI->db->select("sum(total_due) as total_due");
+    $CI->db->where('student_id',$student_id);
+    $voucher = $CI->db->get('fee_voucher_payments')->row();
+    if(!empty($voucher)){
+        return $voucher->total_due;
+    }else{
+        return 0;
+    }
+}
+
+
+function previous_open_balance($student_id)
+{
+
+    $CI = & get_instance();
+    $CI->db->select("opening_balance");
+    $CI->db->where('id',$student_id);
+    $student = $CI->db->get('student')->row();
+    if(!empty($student)){
+        return $student->opening_balance;
+    }else{
+        return 0;
+    }
+}
+
+function voucher_month_validation($months)
+{   
+    $size = sizeof($months);
+    if($size > 1){
+        foreach ($months as $k => $month) {
+            if(isset($months[$k+1])){
+                if($months[$k+1] == ($month+1)){
+                    return true;
+                }else{
+                    return false;
+                }
+            }
+        } 
+    }else{
+        return true;
+    } 
+}
+
+function check_student_fee($student_id)
+{
+    $CI = & get_instance();
+    $CI->db->select("*");
+    $CI->db->where('student_id',$student_id);
+    $voucher = $CI->db->get('fee_voucher_payments')->row();
+    if(!empty($voucher)){
+        return true;
+    }else{
+        return false;
+    }
+}
+
+
+function voucher_month($month)
+{
+    switch ($month) {
+      case 1:
+      echo 'January';
+      break;
+
+      case 2:
+      echo 'February';
+      break;
+
+      case 3:
+      echo 'March';
+      break;
+
+      case 4:
+      echo 'April';
+      break;
+
+      case 5:
+      echo 'May';
+      break;
+
+      case 6:
+      echo 'June';
+      break;
+
+      case 7:
+      echo 'July';
+      break;
+
+      case 8:
+      echo 'August';
+      break;
+
+      case 9:
+      echo 'September';
+      break;
+
+      case 10:
+      echo 'October';
+      break;
+
+      case 11:
+      echo 'November';
+      break;
+
+      case 12:
+      echo 'December';
+      break;
+  }
+
+}
+
+
+function get_monthly_vouchers($month)
+{
+    $CI = & get_instance();
+    $voucher_list = array();
+    $CI->db->select('enroll.student_id,enroll.roll,student.first_name,student.last_name,student.register_no,student.mobileno,class.name as class_name,section.name as section_name,fee_vouchers.voucher_no as voucher_no, fee_vouchers.fee_month as fee_month, fee_vouchers.status as status');
+    $CI->db->from('fee_vouchers');
+    $CI->db->join('fee_allocation', 'fee_allocation.student_id = fee_vouchers.student_id');
+    $CI->db->join('enroll', 'enroll.student_id = fee_allocation.student_id');
+    $CI->db->join('student', 'student.id = enroll.student_id');
+    $CI->db->join('class', 'class.id = enroll.class_id', 'left');
+    $CI->db->join('section', 'section.id = enroll.section_id', 'left');
+    $CI->db->where('fee_vouchers.status',0);
+    $CI->db->where('MONTH(fee_vouchers.due_date) = ',$month);
+    $CI->db->where('YEAR(fee_vouchers.due_date) = YEAR(CURDATE())');
+    $CI->db->order_by('enroll.id', 'asc');
+
+    $result = $CI->db->get()->result_array();
+    if(!empty($result)){
+        foreach ($result as $k => $v) {
+            array_push($voucher_list, array(
+                'student_name' => $v['first_name'].' '.$v['last_name'],
+                'register_no' => $v['register_no'],
+                'mobileno' => $v['mobileno'],
+                'class_name' => $v['class_name'],
+                'section_name' => $v['section_name'],
+                'voucher_no' => $v['voucher_no'],
+                'fee_month' => get_voucher_month($v['fee_month'])
+            ));
+        }
+    }
+    $filter = array_column($voucher_list, 'voucher_no');
+
+    array_multisort($filter, SORT_DESC, $voucher_list);
+
+    return $voucher_list;
+}
+
+function student_voucher($student,$fee_months)
+{
+    $CI = & get_instance();
+    $CI->db->select("MONTH(created_at) as allocation_month, YEAR(created_at) as allocation_year");
+    $CI->db->from('fee_allocation');
+    $CI->db->where('student_id',$student);
+    $result = $CI->db->get()->row();
+
+    $allocation_month = $result->allocation_month;
+    $allocation_year = $result->allocation_year;
+
+    if ($fee_months[0] >= $allocation_month){
+        if($allocation_year == date('Y')){   
+            for ($i=$allocation_month; $i < $fee_months[0]; $i++) { 
+                $CI->db->select("*");
+                $CI->db->from('fee_voucher_months');
+                $CI->db->where('student_id',$student);
+                $CI->db->where('fee_month',$i);
+                $CI->db->where('fee_year',date('Y'));
+                $result = $CI->db->get()->row();
+                if(empty($result)){
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        
+        
+    }else{
+        return false;
+    }
+
+    
+
+}
+
+
+function get_voucher_able($fee_months,$student_id){
+
+    $CI = & get_instance();
+    $arr = array();
+    $CI->db->select('fee_allocation.id as allocation_id,fee_allocation.student_id as student_id, fees_type.name, fees_type.frequency as fees_frequency,fees_type.frequency_type as fee_frequency_type,fee_groups_details.amount, fee_groups_details.due_date, fee_groups_details.fee_type_id');
+    $CI->db->from('fee_allocation');
+    $CI->db->join('fee_groups_details', 'fee_groups_details.fee_groups_id = fee_allocation.group_id');
+    $CI->db->join('fees_type', 'fees_type.id = fee_groups_details.fee_type_id');
+    $CI->db->where('fee_allocation.student_id', $student_id);
+    $result = $CI->db->get()->result_array();
+
+    if(!empty($result)){
+        foreach ($result as $key => $value) {
+
+            if($value['fee_frequency_type'] == 1){
+
+                $checkstudentFee = check_student_fee($student_id);
+                if(!$checkstudentFee){
+                    array_push($arr, array('allocation_id'=> $value['allocation_id'], 'name' => $value['name'], 'amount' => $value['amount'], 'fee_type_id' => $value['fee_type_id']));
+                }
+
+            } 
+            else if($value['fee_frequency_type'] == 3){
+
+                $res = array_intersect(unserialize($fee_months),unserialize($value['fees_frequency']));
+                if(!empty($res)){
+                    array_push($arr, array('allocation_id'=> $value['allocation_id'], 'name' => $value['name'], 'amount' => $value['amount'], 'fee_type_id' => $value['fee_type_id']));
+                }
+
+            } else if($value['fee_frequency_type'] == 2){
+                array_push($arr, array('allocation_id'=> $value['allocation_id'], 'name' => $value['name'], 'amount' => $value['amount'], 'fee_type_id' => $value['fee_type_id']));
+            }
+
+
+        } 
+    }
+
+    return $arr;
+
+}
+
+function get_latest_voucher_month()
+{
+    $CI = & get_instance();
+   $CI->db->select("*");
+   $CI->db->from('fee_voucher_months');
+   $CI->db->order_by('id', 'desc');
+   $CI->db->limit(1, 0);
+   $result = $CI->db->get()->row();
+   return $result->fee_month;
+}
+
+
+

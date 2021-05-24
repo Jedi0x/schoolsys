@@ -8,7 +8,7 @@
 	<!-- page preloader -->
 	<div class="loading-overlay dark">
 		<div class="ring-loader">
-			Loading <span></span>
+			Loading<span></span>
 		</div>
 	</div>
 	<section class="body">

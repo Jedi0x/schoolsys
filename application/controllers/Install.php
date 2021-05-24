@@ -2,10 +2,10 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 
 /**
- * @package : Ramom Diagnostic Management System
+ * @package : Aanttech Diagnostic Management System
  * @version : 2.0
  * @developed by : techtune
- * @support : ramomcoder@yahoo.com
+ * @support : Aanttechcoder@yahoo.com
  * @author url : http://codecanyon.net/user/techtune
  * @filename : Install.php
  */

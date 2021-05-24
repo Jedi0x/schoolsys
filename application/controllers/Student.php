@@ -6,19 +6,19 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 /**
 
- * @package : Ramom school management system
+ * @package : Aanttech school management system
 
  * @version : 3.0
 
- * @developed by : RamomCoder
+ * @developed by : AanttechCoder
 
- * @support : ramomcoder@yahoo.com
+ * @support : Aanttechcoder@yahoo.com
 
- * @author url : http://codecanyon.net/user/RamomCoder
+ * @author url : http://codecanyon.net/user/AanttechCoder
 
  * @filename : Accounting.php
 
- * @copyright : Reserved RamomCoder Team
+ * @copyright : Reserved AanttechCoder Team
 
  */
 
@@ -45,6 +45,8 @@ class Student extends Admin_Controller
         $this->load->model('email_model');
 
         $this->load->model('sms_model');
+
+        $this->load->model('fees_model');
 
     }
 
@@ -156,6 +158,10 @@ class Student extends Admin_Controller
 
         $getBranch = $this->getBranchDetails();
 
+        
+
+
+
         $branchID = $this->application_model->get_branch_id();
 
         if (isset($_POST['save'])) {
@@ -194,7 +200,18 @@ class Student extends Admin_Controller
 
                 $post = $this->input->post();
 
+
                 //save all student information in the database file
+
+                if(isset($post['parent_id'])){
+                
+        
+                    $parent = $this->db->get_where('login_credential', array('user_id' => 1,'role' => 6))->row();
+
+                    $post['grd_username'] = $parent->username;
+                    $post['grd_password'] = $parent->password;                    
+
+                }
 
                 $studentID = $this->student_model->save($post, $getBranch);
 
@@ -219,6 +236,80 @@ class Student extends Admin_Controller
                 $this->db->insert('enroll', $arrayEnroll);
 
 
+                // fee allocation
+
+                $arrayAllocation = array(
+
+                    'student_id' => $studentID,
+
+                    'class_id' => $post['class_id'],
+
+                    'section_id' => $post['section_id'],
+
+                    'group_id' => $post['fee_group_id'],
+
+                    'session_id' => $post['year_id'],
+
+                    'branch_id' => $branchID,
+
+                );
+
+                $this->db->insert('fee_allocation', $arrayAllocation);
+
+
+                // create fee voucher
+
+               
+                $students = $studentID;
+                $carry_balance =  0;
+                $fee_month = array(date('m'));
+                $due_date = date('Y-m-d',strtotime(date('Y-m-d') . "+5 days"));
+                $valid_date = date('Y-m-d',strtotime(date('Y-m-d') . "+10 days"));
+
+
+
+                $fee_voucher = array(
+                    'voucher_no' => voucher_no(),
+                    'voucher_barcode' => uniqid(),
+                    'student_id' => $students,
+                    'carry_balance' => $carry_balance,
+                    'fee_month' => serialize($fee_month),
+                    'fee_year' => date("Y"),
+                    'fee_instruction' => '',
+                    'session_id' => get_session_id(),
+                    'due_date' => $due_date,
+                    'valid_date' => $valid_date,
+                );
+
+                $success = $this->fees_model->fee_voucher($fee_voucher);
+                if($success){
+
+                    foreach ($fee_month as $k => $v) {
+                        $this->db->insert('fee_voucher_months', array(
+                            'fee_voucher_id' => $success,
+                            'student_id' => $students,
+                            'fee_month' => $v,
+                            'fee_year' => date("Y"),
+                        ));
+                    }
+
+                    $voucherables = get_voucher_able(serialize($fee_month),$students);
+                    foreach ($voucherables as $k1 => $voucherable) {
+                        $this->db->insert('fee_voucherables', array(
+                            'voucher_id' => $success,
+                            'fee_head' => $voucherable['name'],
+                            'allocation_id' => $voucherable['allocation_id'],
+                            'amount' => $voucherable['amount'],
+                            'fee_type_id' => $voucherable['fee_type_id'],
+                        ));
+                    }
+                        // Update next invoice number in settings
+                    $this->db->where('name', 'next_voucher_number');
+                    $this->db->set('value', 'value+1', false);
+                    $this->db->update('options');
+                }
+                            
+              
 
                 // handle custom fields data
 
@@ -340,7 +431,7 @@ class Student extends Admin_Controller
 
                 if ($csv_array) {
 
-                    $columnHeaders = array('FirstName','LastName','BloodGroup','Gender','Birthday','MotherTongue','Religion','Caste','Phone','City','State','PresentAddress','PermanentAddress','CategoryID','Roll','AdmissionDate','StudentEmail','StudentPassword','GuardianName','GuardianRelation','FatherName','MotherName','GuardianOccupation','GuardianMobileNo','GuardianAddress','GuardianEmail','GuardianPassword');
+                    $columnHeaders = array('FirstName','LastName','BloodGroup','Gender','Birthday','MotherTongue','Religion','Caste','Phone','City','State','PresentAddress','PermanentAddress','CategoryID','OpeningBalance','Roll','AdmissionDate','StudentEmail','StudentPassword','GuardianName','GuardianRelation','FatherName','MotherName','GuardianOccupation','GuardianMobileNo','GuardianAddress','GuardianEmail','GuardianPassword');
 
                     $csvData = array();
 
@@ -1758,6 +1849,86 @@ class Student extends Admin_Controller
 
         echo json_encode(array('status' => $status, 'message' => $message));
 
+    }
+
+
+    public function discount()
+    {
+        $this->session->set_flashdata('active_tab','show');
+        if ($this->input->post('add_discount')) {
+            $student_id = $this->input->post('student_id');
+            $fee_type = $this->input->post('fee_type_id');
+            $discount = $this->input->post('discount');
+
+
+            $this->db->select('*');
+            $this->db->from('student_discount');
+            $this->db->where('student_id', $student_id);
+            $this->db->where('fee_type', $fee_type);
+            $results =  $this->db->get()->row();
+
+            if(!empty($results)){
+                $this->db->set('discount', $discount);
+                $this->db->where('student_id', $student_id);
+                $this->db->where('fee_type', $fee_type);
+                $success =  $this->db->update('student_discount');
+            }else{
+                $data = array(
+                    'student_id' => $student_id,
+                    'fee_type' => $fee_type,
+                    'discount' => $discount,
+                );
+                $this->db->insert('student_discount', $data);
+                $success = $this->db->insert_id();
+            }
+            if($success){
+                set_alert('success', translate('information_has_been_saved_successfully'));
+                $array = array('status' => 'success', 'url' => base_url('student/profile/'.$student_id)); 
+            }else{
+                $array = array('status' => 'fail', 'error' => translate('something_went_wrong'));
+            }
+            
+            echo json_encode($array);
+            exit();
+        }
+
+        if ($this->input->post('discount_comment')) {
+            $student_id = $this->input->post('student_id');
+            $fee_type = $this->input->post('fee_type_id');
+            $comment = $this->input->post('comment');
+
+            $this->db->select('*');
+            $this->db->from('student_discount');
+            $this->db->where('student_id', $student_id);
+            $this->db->where('fee_type', $fee_type);
+            $results =  $this->db->get()->row();
+
+            if(!empty($results)){
+                $this->db->set('remarks', $comment);
+                $this->db->where('student_id', $student_id);
+                $this->db->where('fee_type', $fee_type);
+                $success =  $this->db->update('student_discount');
+            }else{
+                $data = array(
+                    'student_id' => $student_id,
+                    'fee_type' => $fee_type,
+                    'remarks' => $comment,
+                );
+                $this->db->insert('student_discount', $data);
+                $success = $this->db->insert_id();
+            }
+            if($success){
+                set_alert('success', translate('information_has_been_saved_successfully'));
+                $array = array('status' => 'success', 'url' => base_url('student/profile/'.$student_id)); 
+            }else{
+                $array = array('status' => 'fail', 'error' => translate('something_went_wrong'));
+            }
+            
+            echo json_encode($array);
+            exit();
+        }
+
+        echo json_encode(array('status' => $status, 'message' => $message));
     }
 
 }

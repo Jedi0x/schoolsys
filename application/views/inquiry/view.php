@@ -1,4 +1,5 @@
 <?php $widget = (is_superadmin_loggedin() ? 4 : 6); ?>
+
 <div class="row">
     <div class="col-md-12">
         <section class="panel hide hidden">

@@ -122,14 +122,16 @@ class Student_model extends MY_Model
             );
             $this->email_model->sentStaffRegisteredAccount($emailData);
 
-            $emailData = array(
-                'name' => $data['grd_name'],
-                'username' => $grd_username,
-                'password' => $grd_password,
-                'user_role' => 6,
-                'email' => $data['grd_email'],
-            );
-            $this->email_model->sentStaffRegisteredAccount($emailData);
+            if (!isset($data['guardian_chk'])) {
+                $emailData = array(
+                    'name' => $data['grd_name'],
+                    'username' => $grd_username,
+                    'password' => $grd_password,
+                    'user_role' => 6,
+                    'email' => $data['grd_email'],
+                );
+                $this->email_model->sentStaffRegisteredAccount($emailData);
+            }
 
             return $student_id;
         } else {
@@ -195,6 +197,7 @@ class Student_model extends MY_Model
             'register_no' => substr(app_generate_hash(), 4, 7),
             'photo' => 'defualt.png',
             'email' => $row['StudentEmail'],
+            'opening_balance' => $row['OpeningBalance'],
         );
         //save all student information in the database file
         $this->db->insert('student', $inser_data1);

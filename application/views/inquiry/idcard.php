@@ -73,7 +73,7 @@
 						</div>
 						<div class="id-card-holder">
 							<header class="id-card-heading">
-								<center><img class="img-fs" src="<?=base_url('uploads/app_image/printing-logo.png')?>" alt="RamomCoder Img" /></center>
+								<center><img class="img-fs" src="<?=base_url('uploads/app_image/printing-logo.png')?>" alt="AanttechCoder Img" /></center>
 							</header>
 							<div class="id-card">
 								<div class="photo">
@@ -156,7 +156,7 @@
 	    frameDoc.document.write('<html><head><title></title>');
 	    frameDoc.document.write('<link rel="stylesheet" href="' + base_url + 'assets/vendor/bootstrap/css/bootstrap.min.css">');
 	    frameDoc.document.write('<link rel="stylesheet" href="' + base_url + 'assets/css/custom-style.css">');
-	    frameDoc.document.write('<link rel="stylesheet" href="' + base_url + 'assets/css/ramom.css">');
+	    frameDoc.document.write('<link rel="stylesheet" href="' + base_url + 'assets/css/Aanttech.css">');
 	    frameDoc.document.write('<link rel="stylesheet" href="' + base_url + 'assets/css/idcard.css">');
 	    frameDoc.document.write('</head><body>');
 	    frameDoc.document.write(oContent);
