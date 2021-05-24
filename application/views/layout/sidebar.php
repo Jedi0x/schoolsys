@@ -50,86 +50,7 @@
                     </li>
                     <?php endif; ?>
 
-                    <?php
-                    if (get_permission('frontend_setting', 'is_view') ||
-                        get_permission('frontend_menu', 'is_view') ||
-                        get_permission('frontend_section', 'is_view') ||
-                        get_permission('manage_page', 'is_view') ||
-                        get_permission('frontend_slider', 'is_view') ||
-                        get_permission('frontend_features', 'is_view') ||
-                        get_permission('frontend_testimonial', 'is_view') ||
-                        get_permission('frontend_services', 'is_view') ||
-                        get_permission('frontend_faq', 'is_view')) {
-                        ?>
-                    <!-- Patient Details -->
-                    <li class="nav-parent <?php if ($main_menu == 'frontend') echo 'nav-expanded nav-active'; ?>">
-                        <a><i class="fas fa-globe"></i><span><?php echo translate('frontend'); ?></span></a>
-                        <ul class="nav nav-children">
-                        <?php if(get_permission('frontend_setting', 'is_view')){ ?>
-                            <li class="<?php if ($sub_page == 'frontend/setting') echo 'nav-active'; ?>">
-                                <a href="<?php echo base_url('frontend/setting'); ?>">
-                                    <span><i class="fas fa-caret-right" aria-hidden="true"></i><?php echo translate('setting'); ?></span>
-                                </a>
-                            </li>
-                       <?php } if(get_permission('frontend_menu', 'is_view')){ ?>
-                            <li class="<?php if ($sub_page == 'frontend/menu' || $sub_page == 'frontend/menu_edit') echo 'nav-active'; ?>">
-                                <a href="<?php echo base_url('frontend/menu'); ?>">
-                                    <span><i class="fas fa-caret-right" aria-hidden="true"></i><?php echo translate('menu'); ?></span>
-                                </a>
-                            </li>
-                        <?php } if(get_permission('frontend_section', 'is_view')){ ?>
-                            <li class="<?php if ($sub_page == 'frontend/section_home' ||
-                                            $sub_page == 'frontend/section_doctors' ||
-                                                $sub_page == 'frontend/section_appointment' ||
-                                                    $sub_page == 'frontend/section_faq' ||
-                                                        $sub_page == 'frontend/section_contact' ||
-                                                            $sub_page == 'frontend/section_about' ||
-                                                                $sub_page == 'frontend/section_services') echo 'nav-active'; ?>">
-                                <a href="<?php echo base_url('frontend/section/index'); ?>">
-                                    <span><i class="fas fa-caret-right" aria-hidden="true"></i><?php echo translate('page') . " " . translate('section'); ?></span>
-                                </a>
-                            </li>
-                            <?php } if(get_permission('manage_page', 'is_view')){ ?>
-                                    <li class="<?php if ($sub_page == 'frontend/content' || $sub_page == 'frontend/content_edit') echo 'nav-active'; ?>">
-                                        <a href="<?php echo base_url('frontend/content'); ?>">
-                                            <span><i class="fas fa-caret-right" aria-hidden="true"></i><?php echo translate('manage') . " " . translate('page'); ?></span>
-                                        </a>
-                                    </li>
-                            <?php } if(get_permission('frontend_slider', 'is_view')){ ?>
-                            <li class="<?php if ($sub_page == 'frontend/slider' || $sub_page == 'frontend/slider_edit') echo 'nav-active'; ?>">
-                                <a href="<?php echo base_url('frontend/slider'); ?>">
-                                    <span><i class="fas fa-caret-right"></i><?php echo translate('slider'); ?></span>
-                                </a>
-                            </li>
-                            <?php } if(get_permission('frontend_features', 'is_view')){ ?>
-                            <li class="<?php if ($sub_page == 'frontend/features' || $sub_page == 'frontend/features_edit') echo 'nav-active'; ?>">
-                                <a href="<?php echo base_url('frontend/features'); ?>">
-                                    <span><i class="fas fa-caret-right"></i><?php echo translate('features'); ?></span>
-                                </a>
-                            </li>
-                            <?php } if(get_permission('frontend_testimonial', 'is_view')){ ?>
-                            <li class="<?php if ($sub_page == 'frontend/testimonial' || $sub_page == 'frontend/testimonial_edit') echo 'nav-active'; ?>">
-                                <a href="<?php echo base_url('frontend/testimonial'); ?>">
-                                    <span><i class="fas fa-caret-right"></i><?php echo translate('testimonial'); ?></span>
-                                </a>
-                            </li>
-                            <?php } if(get_permission('frontend_services', 'is_view')){ ?>
-                            <li class="<?php if ($sub_page == 'frontend/services' || $sub_page == 'frontend/services_edit') echo 'nav-active'; ?>">
-                                <a href="<?php echo base_url('frontend/services'); ?>">
-                                    <span><i class="fas fa-caret-right"></i><?php echo translate('service'); ?></span>
-                                </a>
-                            </li>
-                            <?php } if(get_permission('frontend_faq', 'is_view')){ ?>
-                            <li class="<?php if ($sub_page == 'frontend/faq' || $sub_page == 'frontend/faq_edit') echo 'nav-active'; ?>">
-                                <a href="<?php echo base_url('frontend/faq'); ?>">
-                                    <span><i class="fas fa-caret-right"></i><?php echo translate('faq'); ?></span>
-                                </a>
-                            </li>
-                            <?php } ?>
-                        </ul>
-                    </li>
-                    <?php } ?>
-
+                    
                     <?php
                     if (get_permission('student', 'is_add') ||
                     get_permission('multiple_import', 'is_add') ||
@@ -1393,13 +1314,7 @@
                                     <span><i class="fas fa-caret-right" aria-hidden="true"></i><?=translate('database_backup')?></span>
                                 </a>
                             </li>
-                            <?php } if(get_permission('system_update', 'is_add')){ ?>
-                            <li class="<?php if ($sub_page == 'system_update/index') echo 'nav-active';?>">
-                                <a href="<?=base_url('system_update')?>">
-                                    <span><i class="fas fa-caret-right" aria-hidden="true"></i><?=translate('system_update')?></span>
-                                </a>
-                            </li>
-                            <?php } ?>
+                            <?php }  ?>
                         </ul>
                     </li>
                     <?php } ?>

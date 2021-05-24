@@ -2,13 +2,13 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 
 /**
- * @package : Ramom school management system
+ * @package : Aanttech school management system
  * @version : 3.0
- * @developed by : RamomCoder
- * @support : ramomcoder@yahoo.com
- * @author url : http://codecanyon.net/user/RamomCoder
+ * @developed by : AanttechCoder
+ * @support : Aanttechcoder@yahoo.com
+ * @author url : http://codecanyon.net/user/AanttechCoder
  * @filename : Accounting.php
- * @copyright : Reserved RamomCoder Team
+ * @copyright : Reserved AanttechCoder Team
  */
 
 class Fees extends Admin_Controller
@@ -395,6 +395,7 @@ class Fees extends Admin_Controller
             $this->data['fee_group_id'] = $this->input->post('fee_group_id');
             $this->data['branch_id'] = $branchID;
             $this->data['studentlist'] = $this->fees_model->getStudentAllocationLists($this->data['class_id'], $this->data['section_id'],'', $branchID);
+            //debug($this->db->last_query(),true);
         }
         if (isset($_POST['save'])) {
 
@@ -415,12 +416,12 @@ class Fees extends Admin_Controller
                     $this->db->insert('fee_allocation', $arrayData);
                 }
             }
-            if (!empty($student_array)) {
-                $this->db->where_not_in('student_id', $student_array);
-            }
-            $this->db->where('group_id', $fee_groupID);
-            $this->db->where('session_id', get_session_id());
-            $this->db->delete('fee_allocation');
+            // if (!empty($student_array)) {
+            //     $this->db->where_not_in('student_id', $student_array);
+            // }
+            // $this->db->where('group_id', $fee_groupID);
+            // $this->db->where('session_id', get_session_id());
+            //$this->db->delete('fee_allocation');
           
             set_alert('success', translate('information_has_been_saved_successfully'));
             # Added by JR
@@ -520,6 +521,7 @@ class Fees extends Admin_Controller
         $this->data['student_id'] = $voucher->student_id;
         $this->data['invoice'] = $this->fees_model->getInvoiceStatus($this->data['student_id']);
         $this->data['basic'] = $this->fees_model->getInvoiceBasic($this->data['student_id']);
+        $this->data['payment'] = $this->fees_model->voucher_payment($id);
         $this->data['voucher'] = $voucher;
         $this->data['title'] = translate('fee_collection');
         $this->data['main_menu'] = 'fees';

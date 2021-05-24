@@ -2,13 +2,13 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 
 /**
- * @package : Ramom school management system
+ * @package : Aanttech school management system
  * @version : 3.0
- * @developed by : RamomCoder
- * @support : ramomcoder@yahoo.com
- * @author url : http://codecanyon.net/user/RamomCoder
+ * @developed by : AanttechCoder
+ * @support : Aanttechcoder@yahoo.com
+ * @author url : http://codecanyon.net/user/AanttechCoder
  * @filename : Accounting.php
- * @copyright : Reserved RamomCoder Team
+ * @copyright : Reserved AanttechCoder Team
  */
 
 class Test extends Admin_Controller
@@ -19,16 +19,29 @@ class Test extends Admin_Controller
         parent::__construct();
         $this->load->helper('api');
         $this->load->model('authentication_model');
+        $this->load->model('fees_model');
 
     }
 
     public function index()
     {
-        $email = 'umarfaiz';
-                $password = 'admin1234';
-                // username is okey lets check the password now
-                $login_credential = $this->authentication_model->login_credential($email, $password);
+       
+        $months = array();
+        $current_month =  date('m');
+        array_push($months, $current_month);
+        for ($month = 1; $month <= 12; $month++) {
+            if($month != $current_month){
+                array_push($months, $month);
+            }
+        }
 
-                debug($login_credential);
+        debug($months);
+
+        
+
     }
+    
+
+
+
 }

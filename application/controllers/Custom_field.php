@@ -2,13 +2,13 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 
 /**
- * @package : Ramom school management system
+ * @package : Aanttech school management system
  * @version : 3.0
- * @developed by : RamomCoder
- * @support : ramomcoder@yahoo.com
- * @author url : http://codecanyon.net/user/RamomCoder
+ * @developed by : AanttechCoder
+ * @support : Aanttechcoder@yahoo.com
+ * @author url : http://codecanyon.net/user/AanttechCoder
  * @filename : Custom_field.php
- * @copyright : Reserved RamomCoder Team
+ * @copyright : Reserved AanttechCoder Team
  */
 
 class Custom_field extends Admin_Controller

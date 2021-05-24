@@ -10,7 +10,7 @@
 							<div class="row">
 								<div class="col-xs-6">
 									<div class="ib">
-										<img src="<?=base_url('uploads/app_image/printing-logo.png')?>" alt="RamomCoder Img" />
+										<img src="<?=base_url('uploads/app_image/printing-logo.png')?>" alt="AanttechCoder Img" />
 									</div>
 								</div>
 								<div class="col-md-6 text-right">
@@ -102,6 +102,7 @@
 										$total_balance = 0;
 										$total_amount = 0;
 										$typeData = array('' => translate('select'));
+										$previous_open_balance = previous_open_balance($voucher->student_id);
 
 										
 
@@ -179,6 +180,17 @@
 							<div class="row">
 								<div class="col-lg-5 pull-right">
 									<ul class="amounts">
+										<?php 
+											if(!empty($payment)){
+
+												$total_amount = $payment->amount;
+												$total_paid = $payment->total_paid;
+												$total_discount = $payment->total_discount;
+												$previous_balance = $payment->previous_balance;
+												$previous_open_balance = $payment->previous_opening_balance;
+
+											}
+										?>
 										<li><strong><?=translate('grand_total')?> :</strong> <?=$currency_symbol . number_format($total_amount, 2, '.', ''); ?></li>
 										<li><strong><?=translate('paid')?> :</strong> <?=$currency_symbol . number_format($total_paid, 2, '.', ''); ?></li>
 										<li><strong><?=translate('discount')?> :</strong> <?=$currency_symbol . number_format($total_discount, 2, '.', ''); ?></li>
@@ -200,13 +212,28 @@
 
 										}
 										?>
+
+										<?php
+										if($previous_open_balance > 0){ ?>
+											<li>
+											<strong><?=translate('previous_open_balance')?> : </strong> 
+											<?php
+											$f = new NumberFormatter("en", NumberFormatter::SPELLOUT);
+											echo $currency_symbol . number_format($previous_open_balance, 2, '.', '');
+											?>
+											</li> <?php
+											
+
+										}
+										?>
+
 										<li><strong><?=translate('fine')?> :</strong> <?=$currency_symbol . number_format($total_fine, 2, '.', ''); ?></li>
 										<?php if ($total_balance != 0): ?>
 										<li>
 											<strong><?=translate('balance')?> : </strong> 
 											<?php
 											$f = new NumberFormatter("en", NumberFormatter::SPELLOUT);
-											echo $currency_symbol . number_format($total_balance-$total_paid+$previous_balance, 2, '.', '') . ' </br>( ' . ucwords($f->format($total_balance-$total_paid+$previous_balance)) . ' )' ;
+											echo $currency_symbol . number_format($total_balance-$total_paid+$previous_balance+$previous_open_balance, 2, '.', '') . ' </br>( ' . ucwords($f->format($total_balance-$total_paid+$previous_balance+$previous_open_balance)) . ' )' ;
 											?>
 										</li>
 										<?php else: ?>
@@ -214,7 +241,7 @@
 											<strong><?=translate('total_paid')?> : </strong> 
 											<?php
 											$f = new NumberFormatter("en", NumberFormatter::SPELLOUT);
-											echo $currency_symbol . number_format(($total_paid + $total_fine+$previous_balance), 2, '.', '') . ' </br>( ' . ucwords($f->format(($total_paid + $total_fine+$previous_balance))) . ' )' ;
+											echo $currency_symbol . number_format(($total_paid + $total_fine+$previous_balance+$previous_open_balance), 2, '.', '') . ' </br>( ' . ucwords($f->format(($total_paid + $total_fine+$previous_balance+$previous_open_balance))) . ' )' ;
 											?>
 										</li>
 										<?php endif; ?>
@@ -225,12 +252,19 @@
 											
 											<?php echo form_open('fees/collect_fee', array('class' => 'form-horizontal frm-submit')); ?>
 											<strong><?=translate('paid_amount')?> : </strong> 
-											<input type="number" class="form-control" style="display: inline;width: 40%;" name="paid_amount" value="<?=$total_balance-$total_paid+$previous_balance?>" min="0" max="<?=$total_balance-$total_paid+$previous_balance?>">
+											<input type="number" class="form-control" style="display: inline;width: 40%;" name="paid_amount" value="<?=$total_balance-$total_paid+$previous_balance+$previous_open_balance?>" min="0" max="<?=$total_balance-$total_paid+$previous_balance+$previous_open_balance?>">
 
 											<input type='hidden' name='voucher_id' value='<?=$voucher->id?>' />
 											<input type='hidden' name='student_id' value='<?=$voucher->student_id?>' />
+											<input type='hidden' name='previous_open_balance' value='<?=$previous_open_balance?>' />
 
-											<input type='hidden' name='amount' value='<?=$total_balance+$previous_balance?>' />
+											<input type='hidden' name='total_discount' value='<?=$total_discount?>' />
+											<input type='hidden' name='total_fine' value='<?=$total_fine?>' />
+											<input type='hidden' name='previous_balance' value='<?=$previous_balance?>' />
+
+
+
+											<input type='hidden' name='amount' value='<?=$total_balance+$previous_balance+$previous_open_balance?>' />
 											<button type="submit" class="btn btn-default ml-sm"><i class="fas fa-save"></i> </button>
 										<?php echo form_close();?>
 										</li>

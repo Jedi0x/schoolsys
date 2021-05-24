@@ -24,9 +24,9 @@ if(isset($active_tab)){
 				<a href="#single_voucher" data-toggle="tab"> <?php echo translate('create_single_voucher'); ?></a>
 			</li>
 
-			<li class="<?php echo ($tabs_active == 'bulk_vouchers' ? 'active' : '' ); ?>">
+			<!-- <li class="<?php echo ($tabs_active == 'bulk_vouchers' ? 'active' : '' ); ?>">
 				<a href="#bulk_vouchers" data-toggle="tab"> <?php echo translate('create_bulk_vouchers'); ?></a>
-			</li>
+			</li> -->
 
 		</ul>
 		<div class="tab-content">
@@ -38,7 +38,19 @@ if(isset($active_tab)){
 
 
 							<?php
-for ($month = 1; $month <= 12; $month++) { 
+
+
+							$months = array();
+							$updated_voucher = get_latest_voucher_month();
+							array_push($months, $updated_voucher);
+							for ($month = 1; $month <= 12; $month++) {
+								if($month != $updated_voucher){
+									array_push($months, $month);
+								}
+							}
+
+
+foreach ($months as $key => $month) {
 
 	$show = '';
 	$aria = "false";
@@ -435,7 +447,10 @@ for ($month = 1; $month <= 12; $month++) {
 					<?php
 					$array_months = $this->app_lib->get_months();
 					echo form_dropdown("fee_month[]", $array_months, set_value('fee_month'), "class='form-control' id='frequency_type' required = ''
-						data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity' multiple='multiple'" );
+						data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity'" );
+
+					// echo form_dropdown("fee_month[]", $array_months, set_value('fee_month'), "class='form-control' id='frequency_type' required = ''
+					// 	data-plugin-selectTwo data-width='100%' data-minimum-results-for-search='Infinity' multiple='multiple'" );
 						?>
 					<span class="error"></span>
 				</div>

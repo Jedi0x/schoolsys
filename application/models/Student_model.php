@@ -197,6 +197,7 @@ class Student_model extends MY_Model
             'register_no' => substr(app_generate_hash(), 4, 7),
             'photo' => 'defualt.png',
             'email' => $row['StudentEmail'],
+            'opening_balance' => $row['OpeningBalance'],
         );
         //save all student information in the database file
         $this->db->insert('student', $inser_data1);

@@ -6,19 +6,19 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 /**
 
- * @package : Ramom school management system
+ * @package : Aanttech school management system
 
  * @version : 3.0
 
- * @developed by : RamomCoder
+ * @developed by : AanttechCoder
 
- * @support : ramomcoder@yahoo.com
+ * @support : Aanttechcoder@yahoo.com
 
- * @author url : http://codecanyon.net/user/RamomCoder
+ * @author url : http://codecanyon.net/user/AanttechCoder
 
  * @filename : Accounting.php
 
- * @copyright : Reserved RamomCoder Team
+ * @copyright : Reserved AanttechCoder Team
 
  */
 
@@ -431,7 +431,7 @@ class Student extends Admin_Controller
 
                 if ($csv_array) {
 
-                    $columnHeaders = array('FirstName','LastName','BloodGroup','Gender','Birthday','MotherTongue','Religion','Caste','Phone','City','State','PresentAddress','PermanentAddress','CategoryID','Roll','AdmissionDate','StudentEmail','StudentPassword','GuardianName','GuardianRelation','FatherName','MotherName','GuardianOccupation','GuardianMobileNo','GuardianAddress','GuardianEmail','GuardianPassword');
+                    $columnHeaders = array('FirstName','LastName','BloodGroup','Gender','Birthday','MotherTongue','Religion','Caste','Phone','City','State','PresentAddress','PermanentAddress','CategoryID','OpeningBalance','Roll','AdmissionDate','StudentEmail','StudentPassword','GuardianName','GuardianRelation','FatherName','MotherName','GuardianOccupation','GuardianMobileNo','GuardianAddress','GuardianEmail','GuardianPassword');
 
                     $csvData = array();
 

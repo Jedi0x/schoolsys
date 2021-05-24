@@ -22,6 +22,7 @@ class User extends REST_Controller {
         $this->methods['user_post']['limit'] = 100000; // 100 requests per hour per user/key
         $this->methods['user_delete']['limit'] = 50; // 50 requests per hour per user/key
         $this->load->helper('api');
+         $this->load->helper('general');
 
 
     }
@@ -147,18 +148,24 @@ class User extends REST_Controller {
         try{
             $user_data = JWT::decode($token, "user_auth",array('HS256'));
 
+            $date = $this->get('date');
 
-            $this->db->where('branch_id', $user_data->loggedin_branch);       
-            $this->db->order_by('id', 'desc');
-            $events = $this->db->get('event')->result();
+            if(empty($date)){
+                $this->response(array('status' => FALSE, 'message' => translate('date_is_missing.')), REST_Controller::HTTP_NOT_FOUND);
+            } else {
+                $this->db->where('start_date', $date);  
+                $this->db->where('branch_id', $user_data->loggedin_branch);       
+                $this->db->order_by('id', 'desc');
+                $events = $this->db->get('event')->row();
 
-            if(!empty($events)){
-                foreach ($events as $key => $event) {
-                    $event->image_path = base_url('uploads/frontend/events/'.$event->image);
+                if(!empty($events)){
+
+                    $events->image_path = base_url('uploads/frontend/events/'.$events->image);
+                    $events->remark = strip_tags($events->remark);
+                    $this->set_response(array('status' => TRUE, 'events' => $events), REST_Controller::HTTP_OK);
+                }else{
+                    $this->response(array('status' => FALSE, 'message' => translate('no_record_found')), REST_Controller::HTTP_NOT_FOUND);
                 }
-                $this->set_response(array('status' => TRUE, 'events' => $events), REST_Controller::HTTP_OK);
-            }else{
-                $this->response(array('status' => FALSE, 'message' => translate('no_record_found')), REST_Controller::HTTP_NOT_FOUND);
             }
 
         } catch (Exception $ex) {
@@ -324,9 +331,12 @@ class User extends REST_Controller {
             $user_data = JWT::decode($token, "user_auth",array('HS256'));
 
             $user_id = $this->get('userID');
+            $date = $this->get('date');
 
             if(empty($user_id)){
                 $this->response(array('status' => FALSE, 'message' => translate('user_id_is_missing.')), REST_Controller::HTTP_NOT_FOUND);
+            } else if(empty($date)){
+                $this->response(array('status' => FALSE, 'message' => translate('date_is_missing.')), REST_Controller::HTTP_NOT_FOUND);
             }else{
 
                 $user_details = get_user_enroll($user_id);
@@ -343,18 +353,19 @@ class User extends REST_Controller {
                 $this->db->join('staff', 'staff.id = homework.created_by', 'left');
                 $this->db->where('homework.class_id', $classID);
                 $this->db->where('homework.section_id', $sectionID);
+                $this->db->where('homework.date_of_homework', $date);
                 $this->db->order_by('homework.id', 'desc');
                 $homeworks = $this->db->get()->result();
 
                 if(!empty($homeworks)){
-
-                    foreach ($homeworks as $e => $homework) {
+                    foreach ($homeworks as $key => $homework) {
+                        
                         $name     = get_type_name_by_id('homework', $homework->id, 'document');
                         $ext      = explode(".", $name);
                         $homework->document_path = base_url('uploads/attachments/homework/'.$homework->id. '.' . $ext[1]);
+                        $homework->description = strip_tags($homework->description);
                     }
-
-
+                    
                     $this->set_response(array('status' => TRUE, 'homework' => $homeworks), REST_Controller::HTTP_OK);
                 }else{
                     $this->response(array('status' => FALSE, 'message' => translate('no_record_found')), REST_Controller::HTTP_NOT_FOUND);
@@ -573,5 +584,308 @@ class User extends REST_Controller {
        
     }
 
+
+    public function fees_get() {
+        $this->load->model('fees_model');
+        $token = $this->input->get_request_header('Authorization');
+        $token = explode(' ', $token)[1];
+        
+        try{
+            $user_data = JWT::decode($token, "user_auth",array('HS256'));
+            $timestamp = $this->get('timestamp');
+            $student_id = $this->get('userID');
+
+            if(empty($timestamp)){
+                $this->response(array('status' => FALSE, 'message' => translate('timestamp_is_missing.')), REST_Controller::HTTP_NOT_FOUND);
+            }else if(empty($student_id)){
+                $this->response(array('status' => FALSE, 'message' => translate('user_id_is_missing.')), REST_Controller::HTTP_NOT_FOUND);
+            }else{
+
+                $response = array();
+                $month = date('m', strtotime($this->get('timestamp')));
+                $year = date('Y', strtotime($this->get('timestamp')));
+
+                $this->db->select('fee_vouchers.*');
+                $this->db->from('fee_vouchers');
+                $this->db->join('fee_voucher_months','fee_voucher_months.fee_voucher_id = fee_vouchers.id');
+                $this->db->where('fee_vouchers.student_id', $student_id);
+                $this->db->where('fee_voucher_months.fee_month', $month);
+                $this->db->where('fee_voucher_months.fee_year', $year);
+                $voucher = $this->db->get()->row();
+                if(!empty($voucher)){
+
+                    $this->db->select('*');
+                    $this->db->from('fee_voucherables');
+                    $this->db->where('voucher_id', $voucher->id);
+                    $voucherables = $this->db->get()->result();
+
+                    $total_fine = 0;
+                    $total_discount = 0;
+                    $total_paid = 0;
+                    $total_balance = 0;
+                    $total_amount = 0;
+                    $previous_open_balance = previous_open_balance($voucher->student_id);
+
+                    if($voucher->carry_balance == 1){
+                        $previous_balance = previous_balance($voucher->student_id);
+                    }else{
+                        $previous_balance = 0;
+                    }
+
+                    $response['fee_heads'] = array();
+                    foreach ($voucherables as $row) {
+
+                        $fee_head = array(
+                            'fee_head' => $row->fee_head,
+                            'amount' => $row->amount 
+                        );
+
+                        array_push($response['fee_heads'],$fee_head);
+
+                        $type_discount = 0;
+                        $deposit = $this->fees_model->getStudentFeeDeposit($row->allocation_id, $row->fee_type_id);
+
+                        $check_month = check_voucher_month($voucher->id,$row->fee_type_id);
+                        $discount_info = get_fee_type_discount($voucher->student_id,$row->fee_type_id);
+
+                        if(!empty($discount_info)){
+                            if(!empty($discount_info->discount)){
+                                $type_discount = number_format(($discount_info->discount*$check_month), 2, '.', '');
+
+                            }else{
+                                $total_discount += 0;
+                                $type_discount = number_format(0, 2, '.', '');
+                            }
+                        }
+
+                        $type_fine = number_format(0, 2, '.', '');
+                        $fine = getBalanceByType($row->allocation_id, $row->fee_type_id,$voucher->voucher_no);
+
+                        if($fine > 0){
+                            $type_fine =  number_format($fine, 2, '.', '');
+                        }
+
+                        $balance = ($row->amount*$check_month - $type_discount) + $type_fine;
+                        $total_discount += $type_discount;
+                        $total_fine += $type_fine;
+                        $total_balance += $balance;
+                        $total_amount += $row->amount*$check_month;
+
+                        if ($balance != 0) {
+                            $typeData[$row->allocation_id . "|" . $row->fee_type_id] = $row->fee_head;
+                        }
+                    }
+
+                    $fee_amount = number_format($total_balance-$total_paid+$previous_balance+$previous_open_balance, 2, '.', '');
+
+
+                    $this->db->select('*');
+                    $this->db->from('fee_voucher_payments');
+                    $this->db->where('voucher_id', $voucher->id);
+                    $payment = $this->db->get()->row();
+
+                    $total_due = 0;
+                    if(!empty($payment)){
+                        $fee_amount = $payment->amount;
+                        $total_paid = $payment->total_paid;
+                        $total_discount = $payment->total_discount;
+                        $total_fine = $payment->total_fine;
+                        $total_due = $payment->total_due;
+                        $previous_open_balance = $payment->previous_opening_balance;
+                        $previous_balance = $payment->previous_balance;
+                    }
+
+                    $response['total_payable_amount'] = number_format($fee_amount,2, '.', '');
+                    $response['total_discount'] = number_format($total_discount,2, '.', '');
+                    $response['total_paid'] = number_format($total_paid,2, '.', '');
+                    $response['total_fine'] = number_format($total_fine,2, '.', '');
+                    $response['total_due'] = number_format($total_due,2, '.', '');
+                    $response['previous_open_balance'] = number_format($previous_open_balance,2, '.', '');
+                    $response['previous_balance'] = number_format($previous_balance,2, '.', '');
+                    $response['total_due'] = number_format($total_due,2, '.', '');
+                    
+
+
+                    $this->set_response(array('status' => TRUE, 'fees' => $response), REST_Controller::HTTP_OK);
+                    
+                }else{
+
+                    $this->response(array('status' => FALSE, 'message' => translate('no_record_found')), REST_Controller::HTTP_NOT_FOUND);
+
+                }
+            }
+
+        } catch (Exception $ex) {
+            $response = array("status" => FALSE,"message" => 'Unauthorized token');
+            $this->response($response, REST_Controller::HTTP_UNAUTHORIZED);
+
+        }
+       
+    }
+
+
+    public function payments_get() {
+        $this->load->model('fees_model');
+        $token = $this->input->get_request_header('Authorization');
+        $token = explode(' ', $token)[1];
+        
+        try{
+            $user_data = JWT::decode($token, "user_auth",array('HS256'));
+            $timestamp = $this->get('timestamp');
+            $student_id = $this->get('userID');
+
+            if(empty($student_id)){
+                $this->response(array('status' => FALSE, 'message' => translate('userID_is_missing.')), REST_Controller::HTTP_NOT_FOUND);
+            }else if(empty($timestamp)){
+                $this->response(array('status' => FALSE, 'message' => translate('timestamp_is_missing.')), REST_Controller::HTTP_NOT_FOUND);
+            }else{
+
+                $response = array();
+                $month = date('m', strtotime($this->get('timestamp')));
+                $year = date('Y', strtotime($this->get('timestamp')));
+
+                $this->db->select('fee_vouchers.*');
+                $this->db->from('fee_vouchers');
+                $this->db->join('fee_voucher_months','fee_voucher_months.fee_voucher_id = fee_vouchers.id');
+                $this->db->where('fee_vouchers.student_id', $student_id);
+                $this->db->where('fee_voucher_months.fee_month', $month);
+                $this->db->where('fee_voucher_months.fee_year', $year);
+                $voucher = $this->db->get()->row();
+
+                if(!empty($voucher)){
+
+                    $this->db->select('*');
+                    $this->db->from('fee_voucher_payments');
+                    $this->db->where('voucher_id', $voucher->id);
+                    $paid = $this->db->get()->row();
+
+                    if(!empty($paid)){
+                        $response['status'] = 'Paid';
+                        $response['paid_via'] = 'Bank';
+                    }else if(date('Y-m-d') >= $voucher->due_date && date('Y-m-d') < $voucher->valid_date){
+                        $response['status'] = 'Pending Fee';
+                        $response['paid_via'] = 'N/A';
+                    }else if(date('Y-m-d') >= $voucher->valid_date){
+                        $response['status'] = 'Fee Defaulter';
+                        $response['paid_via'] = 'N/A';
+                    }
+
+                    $this->db->select('*');
+                    $this->db->from('fee_voucherables');
+                    $this->db->where('voucher_id', $voucher->id);
+                    $voucherables = $this->db->get()->result();
+
+                    $total_fine = 0;
+                    $total_discount = 0;
+                    $total_paid = 0;
+                    $total_balance = 0;
+                    $total_amount = 0;
+
+                    if($voucher->carry_balance == 1){
+                        $previous_balance = previous_balance($voucher->student_id);
+                    }else{
+                        $previous_balance = 0;
+                    }
+
+                    foreach ($voucherables as $row) {
+
+                        $type_discount = 0;
+                        $deposit = $this->fees_model->getStudentFeeDeposit($row->allocation_id, $row->fee_type_id);
+
+                        $check_month = check_voucher_month($voucher->id,$row->fee_type_id);
+                        $discount_info = get_fee_type_discount($voucher->student_id,$row->fee_type_id);
+
+                        if(!empty($discount_info)){
+                            if(!empty($discount_info->discount)){
+                                $type_discount = number_format(($discount_info->discount*$check_month), 2, '.', '');
+
+                            }else{
+                                $total_discount += 0;
+                                $type_discount = number_format(0, 2, '.', '');
+                            }
+                        }
+
+                        $type_fine = number_format(0, 2, '.', '');
+                        $fine = getBalanceByType($row->allocation_id, $row->fee_type_id,$voucher->voucher_no);
+
+                        if($fine > 0){
+                            $type_fine =  number_format($fine, 2, '.', '');
+                        }
+
+
+
+                        $balance = ($row->amount*$check_month - $type_discount) + $type_fine;
+
+                        $total_discount += $type_discount;
+                        $total_fine += $type_fine;
+
+
+                        $total_balance += $balance;
+                        $total_amount += $row->amount*$check_month;
+
+                        if ($balance != 0) {
+                            $typeData[$row->allocation_id . "|" . $row->fee_type_id] = $row->fee_head;
+                        }
+                    }
+
+                    $fee_amount = number_format($total_balance-$total_paid+$previous_balance, 2, '.', '');
+
+
+                    $this->db->select('*');
+                    $this->db->from('fee_voucher_payments');
+                    $this->db->where('voucher_id', $voucher->id);
+                    $payment = $this->db->get()->row();
+
+                    $total_due = 0;
+                    if(!empty($payment)){
+                        $fee_amount = $payment->amount;
+                        $total_paid = $payment->total_paid;
+                        $total_discount = $payment->total_discount;
+                        $total_fine = $payment->total_fine;
+                        $total_due = $payment->total_due;
+                        $previous_open_balance = $payment->previous_opening_balance;
+                        $previous_balance = $payment->previous_balance;
+                    }
+
+
+
+                    $response['total_payable_amount'] = number_format($fee_amount,2, '.', '');
+                    $response['total_discount'] = number_format($total_discount,2, '.', '');
+                    $response['total_paid'] = number_format($total_paid,2, '.', '');
+                    $response['total_fine'] = number_format($total_fine,2, '.', '');
+                    $response['total_due'] = number_format($total_due,2, '.', '');
+                    if($previous_open_balance > 0){
+                        $response['previous_open_balance'] = number_format($previous_open_balance,2, '.', '');
+                    }else{
+                        $response['previous_open_balance'] = number_format($previous_open_balance,2, '.', '');
+                    }
+                    if($previous_balance > 0){
+                        $response['previous_balance'] = number_format($previous_balance,2, '.', '');
+                    }else{
+                        $response['previous_balance'] = number_format($previous_balance,2, '.', '');
+                    }
+
+                    $d=strtotime($voucher->due_date);
+                    $due_date =  date("dS F, Y", $d);
+                    $response['due_date'] = $due_date;
+                    $d=strtotime($voucher->valid_date);
+                    $valid_date =  date("dS F, Y", $d);
+                    $response['valid_date'] = $valid_date;
+                    $this->set_response(array('status' => TRUE, 'fees' => $response), REST_Controller::HTTP_OK);
+
+                    
+                }else{
+
+                    $this->response(array('status' => FALSE, 'message' => translate('no_record_found')), REST_Controller::HTTP_NOT_FOUND);
+                }
+            }
+
+        } catch (Exception $ex) {
+            $response = array("status" => FALSE,"message" => 'Unauthorized token');
+            $this->response($response, REST_Controller::HTTP_UNAUTHORIZED);
+
+        }
+
+    }
 
 }

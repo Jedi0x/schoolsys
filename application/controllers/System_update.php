@@ -2,13 +2,13 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 
 /**
- * @package : Ramom school management system
+ * @package : Aanttech school management system
  * @version : 3.0
- * @developed by : RamomCoder
- * @support : ramomcoder@yahoo.com
- * @author url : http://codecanyon.net/user/RamomCoder
+ * @developed by : AanttechCoder
+ * @support : Aanttechcoder@yahoo.com
+ * @author url : http://codecanyon.net/user/AanttechCoder
  * @filename : System_update.php
- * @copyright : Reserved RamomCoder Team
+ * @copyright : Reserved AanttechCoder Team
  */
 
 class System_update extends Admin_Controller
@@ -179,7 +179,7 @@ class System_update extends Admin_Controller
         if ($statusCode == 505) {
             $mailBody = 'Hello. I tried to upgrade to the latest version but for some reason the upgrade failed. Please remove the key from the upgrade log so i can try again. My installation URL is: ' . base_url() . '. Regards.';
             $mailSubject = 'Purchase Key Removal Request - [' . $this->purchase_code . ']';
-            $error = 'Purchase key already used to download upgrade files for version ' . wordwrap($this->latest_version, 1, '.', true) . '. Performing multiple auto updates to the latest version with one purchase key is not allowed. If you have multiple installations you must buy another license.<br /><br /> If you have staging/testing installation and auto upgrade is performed there, <b>you should perform manually upgrade</b> in your production area<br /><br /> <h4 class="bold">Upgrade failed?</h4> The error can be shown also if the update failed for some reason, but because the purchase key is already used to download the files, you won’t be able to re-download the files again.<br /><br />Click <a href="mailto:ramomcoder@yahoo.com?subject=' . $mailSubject . '&body=' . $mailBody . '"><b>here</b></a> to send an mail and get your purchase key removed from the upgrade log.';
+            $error = 'Purchase key already used to download upgrade files for version ' . wordwrap($this->latest_version, 1, '.', true) . '. Performing multiple auto updates to the latest version with one purchase key is not allowed. If you have multiple installations you must buy another license.<br /><br /> If you have staging/testing installation and auto upgrade is performed there, <b>you should perform manually upgrade</b> in your production area<br /><br /> <h4 class="bold">Upgrade failed?</h4> The error can be shown also if the update failed for some reason, but because the purchase key is already used to download the files, you won’t be able to re-download the files again.<br /><br />Click <a href="mailto:Aanttechcoder@yahoo.com?subject=' . $mailSubject . '&body=' . $mailBody . '"><b>here</b></a> to send an mail and get your purchase key removed from the upgrade log.';
         } elseif ($statusCode == 506) {
             $error = 'This is not a valid purchase code.';
         } elseif ($statusCode == 507) {
@@ -201,7 +201,7 @@ class System_update extends Admin_Controller
             exit();
         }
         $message = '<div>
-            <h4>Congratulations your Ramom software has been successfully updated ' . config_item('version') . '.</h4>
+            <h4>Congratulations your Aanttech software has been successfully updated ' . config_item('version') . '.</h4>
             <p>
                 This window will reload automatically in 5 seconds. You are strongly recommended to manually clear your browser cache.
             </p>

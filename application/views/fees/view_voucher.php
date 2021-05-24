@@ -10,7 +10,7 @@
 							<div class="row">
 								<div class="col-xs-6">
 									<div class="ib">
-										<img src="<?=base_url('uploads/app_image/printing-logo.png')?>" alt="RamomCoder Img" />
+										<img src="<?=base_url('uploads/app_image/printing-logo.png')?>" alt="AanttechCoder Img" />
 									</div>
 								</div>
 								<div class="col-md-6 text-right">
@@ -102,8 +102,8 @@
 										$total_balance = 0;
 										$total_amount = 0;
 										$typeData = array('' => translate('select'));
+										$previous_open_balance = previous_open_balance($voucher->student_id);
 
-										
 
 										// get total paid amount of this voucher
 
@@ -200,13 +200,29 @@
 
 										}
 										?>
+
+										<?php
+										if($previous_open_balance > 0){ ?>
+											<li>
+											<strong><?=translate('previous_open_balance')?> : </strong> 
+											<?php
+											$f = new NumberFormatter("en", NumberFormatter::SPELLOUT);
+											echo $currency_symbol . number_format($previous_open_balance, 2, '.', '');
+											?>
+											</li> <?php
+											
+
+										}
+										?>
+
+
 										<li><strong><?=translate('fine')?> :</strong> <?=$currency_symbol . number_format($total_fine, 2, '.', ''); ?></li>
 										<?php if ($total_balance != 0): ?>
 										<li>
 											<strong><?=translate('balance')?> : </strong> 
 											<?php
 											$f = new NumberFormatter("en", NumberFormatter::SPELLOUT);
-											echo $currency_symbol . number_format($total_balance-$total_paid+$previous_balance, 2, '.', '') . ' </br>( ' . ucwords($f->format($total_balance-$total_paid+$previous_balance)) . ' )' ;
+											echo $currency_symbol . number_format($total_balance-$total_paid+$previous_balance+$previous_open_balance, 2, '.', '') . ' </br>( ' . ucwords($f->format($total_balance-$total_paid+$previous_balance+$previous_open_balance)) . ' )' ;
 											?>
 										</li>
 										<?php else: ?>
@@ -214,7 +230,7 @@
 											<strong><?=translate('total_paid')?> : </strong> 
 											<?php
 											$f = new NumberFormatter("en", NumberFormatter::SPELLOUT);
-											echo $currency_symbol . number_format(($total_paid + $total_fine+$previous_balance), 2, '.', '') . ' </br>( ' . ucwords($f->format(($total_paid + $total_fine+$previous_balance))) . ' )' ;
+											echo $currency_symbol . number_format(($total_paid + $total_fine+$previous_balance+$previous_open_balance), 2, '.', '') . ' </br>( ' . ucwords($f->format(($total_paid + $total_fine+$previous_balance+$previous_open_balance))) . ' )' ;
 											?>
 										</li>
 										<?php endif; ?>

@@ -636,6 +636,21 @@ function previous_balance($student_id)
     }
 }
 
+
+function previous_open_balance($student_id)
+{
+
+    $CI = & get_instance();
+    $CI->db->select("opening_balance");
+    $CI->db->where('id',$student_id);
+    $student = $CI->db->get('student')->row();
+    if(!empty($student)){
+        return $student->opening_balance;
+    }else{
+        return 0;
+    }
+}
+
 function voucher_month_validation($months)
 {   
     $size = sizeof($months);
@@ -837,6 +852,17 @@ function get_voucher_able($fee_months,$student_id){
 
     return $arr;
 
+}
+
+function get_latest_voucher_month()
+{
+    $CI = & get_instance();
+   $CI->db->select("*");
+   $CI->db->from('fee_voucher_months');
+   $CI->db->order_by('id', 'desc');
+   $CI->db->limit(1, 0);
+   $result = $CI->db->get()->row();
+   return $result->fee_month;
 }
 
 
