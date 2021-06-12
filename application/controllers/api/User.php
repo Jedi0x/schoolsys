@@ -185,18 +185,27 @@ class User extends REST_Controller {
 
             $classID = $this->get('classID');
             $sectionID = $this->get('sectionID');
+            $timestamp = $this->get('timestamp');
 
             if(empty($classID)){
                 $this->response(array('status' => FALSE, 'message' => translate('please_add_class_id')), REST_Controller::HTTP_NOT_FOUND);
             }else if(empty($sectionID)){
                 $this->response(array('status' => FALSE, 'message' => translate('please_add_section_id')), REST_Controller::HTTP_NOT_FOUND);
+            }else if(empty($timestamp)){
+                $this->response(array('status' => FALSE, 'message' => translate('please_add_timestamp')), REST_Controller::HTTP_NOT_FOUND);
             }else {
+
+
+                $month = date('m', strtotime($this->get('timestamp')));
+                $year = date('Y', strtotime($this->get('timestamp')));
 
                 $this->db->select('t.*,b.name as branch_name');
                 $this->db->from('timetable_exam as t');
                 $this->db->join('branch as b', 'b.id = t.branch_id', 'left');
                 $this->db->where('t.class_id', $classID);
                 $this->db->where('t.section_id', $sectionID);
+                $this->db->where('MONTH(exam_date)', $month);
+                $this->db->where('YEAR(exam_date)', $year);
                 $this->db->order_by('t.id', 'asc');
                 $this->db->group_by('t.exam_id');
                 $exams =  $this->db->get()->result();
@@ -878,6 +887,80 @@ class User extends REST_Controller {
 
                     $this->response(array('status' => FALSE, 'message' => translate('no_record_found')), REST_Controller::HTTP_NOT_FOUND);
                 }
+            }
+
+        } catch (Exception $ex) {
+            $response = array("status" => FALSE,"message" => 'Unauthorized token');
+            $this->response($response, REST_Controller::HTTP_UNAUTHORIZED);
+
+        }
+
+    }
+
+
+     public function resultHistory_get() {
+        $this->load->model('fees_model');
+        $token = $this->input->get_request_header('Authorization');
+        $token = explode(' ', $token)[1];
+        
+        try{
+            $user_data = JWT::decode($token, "user_auth",array('HS256'));
+            $student_id = $this->get('userID');
+
+            if(empty($student_id)){
+                $this->response(array('status' => FALSE, 'message' => translate('userID_is_missing.')), REST_Controller::HTTP_NOT_FOUND);
+            }else{
+
+                $output = array();
+                $output['lables'] = array(
+                    "Jan",
+                    "Feb",
+                    "Mar",
+                    "Apr",
+                    "May",
+                    "Jun",
+                    "Jul",
+                    "Aug",
+                    "Sep",
+                    "Oct",
+                    "Nov",
+                    "Dec"
+                );
+                for ($month = 0; $month <= 11; $month++) {
+                    $total_obtain_marks = 0;
+                    $total_full_marks = 0;
+                    $this->db->select('t.*,s.name as subject_name,eh.hall_no,m.mark as obtain_marks,m.student_id');
+                    $this->db->from('timetable_exam as t');
+                    $this->db->join('subject as s', 's.id = t.subject_id', 'left');
+                    $this->db->join('mark as m', 'm.subject_id = t.subject_id', 'left');
+                    $this->db->join('exam_hall as eh', 'eh.id = t.hall_id', 'left');
+                    $this->db->where('m.student_id', $student_id);
+                    $this->db->where('month(t.exam_date)', $month+1);
+                    $this->db->where('year(t.exam_date)', date('Y'));
+                    $exam_details =  $this->db->get()->result();
+                    $output['data'][$month] =  0;
+                    if(!empty($exam_details)){
+
+                        foreach ($exam_details as $e => $exam) {
+                            $mark_distribution = json_decode($exam->mark_distribution, true);
+                            $obtainedMark = json_decode($exam->obtain_marks, true);
+
+                            $mark_distribution = array_values($mark_distribution);
+                            $obtainedMark = array_values($obtainedMark);
+                            $response[$e]['full_mark'] = $mark_distribution[0]['full_mark'];
+                            $response[$e]['obtain_mark'] = $obtainedMark[0];
+                            $total_obtain_marks+=$response[$e]['obtain_mark'];
+                            $total_full_marks+=$response[$e]['full_mark'];
+
+                        }
+                        $percentage = ($total_obtain_marks * 100) / $total_full_marks;
+                        $number = number_format($percentage, 2, '.', '');
+                        $output['data'][$month] =  $number;
+                    }
+                }
+
+                $this->set_response(array('status' => TRUE, 'exam_details' => $output), REST_Controller::HTTP_OK);
+                
             }
 
         } catch (Exception $ex) {
